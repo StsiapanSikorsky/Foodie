@@ -69,6 +69,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/authentication/owner/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/authentication/validate").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "//webjars/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())
                         .requestMatchers(HttpMethod.PUT, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())
                         .requestMatchers(HttpMethod.DELETE, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())

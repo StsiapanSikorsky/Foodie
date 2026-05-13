@@ -7,6 +7,8 @@ import com.Foodie.authentivation_service.responce.authentication.AuthenticationR
 import com.Foodie.authentivation_service.responce.authentication.TokenValidationResponse;
 import com.Foodie.authentivation_service.services.AuthenticationService;
 import com.Foodie.authentivation_service.utils.Utils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -21,11 +23,16 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("${end.point.authentication}")
 @RequiredArgsConstructor
+@Tag(name = "Authorization controller")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
     @PostMapping("${end.point.user.register}")
+    @Operation(
+            summary = "Регистрация пользователя",
+            description = "Регистрация пользователя с ролью User"
+    )
     public ResponseEntity<AuthenticationResponse<UserProfileDto>> registerUser(
             @RequestBody @Valid RegistrationRequest request,
             HttpServletResponse response
@@ -42,6 +49,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("${end.point.user.login}")
+    @Operation(
+            summary = "Логин пользователя",
+            description = "Логин пользователя с ролью User"
+    )
     public ResponseEntity<AuthenticationResponse<UserProfileDto>> loginUser(
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
@@ -58,6 +69,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("${end.point.owner.register}")
+    @Operation(
+            summary = "Регистрация собственника",
+            description = "Регистрация пользователя с ролью OWNER"
+    )
     public ResponseEntity<AuthenticationResponse<UserProfileDto>> registerOwner(
             @RequestBody @Valid RegistrationRequest request,
             HttpServletResponse response
@@ -74,6 +89,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("${end.point.owner.login}")
+    @Operation(
+            summary = "Логин собственника",
+            description = "Логин пользователя с ролью OWNER"
+    )
     public ResponseEntity<AuthenticationResponse<UserProfileDto>> loginOwner(
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
@@ -90,6 +109,10 @@ public class AuthenticationController {
     }
 
     @GetMapping("${end.point.validate}")
+    @Operation(
+            summary = "Проверка валидности JWT токена",
+            description = "Проверка валидности JWT токена"
+    )
     public ResponseEntity<TokenValidationResponse> validateToken(
             @RequestHeader("Authorization") String authHeader
     ) {
@@ -107,9 +130,12 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
-
     //TODO:Проверить через API Gateway при 401
     @PostMapping("${end.point.refresh.token}")
+    @Operation(
+            summary = "Обновление JWT токена",
+            description = "Обновление JWT токена с проверкой RefreshToken"
+    )
     public ResponseEntity<AuthenticationResponse<UserProfileDto>> refreshToken(
             @RequestParam(name = "token") String refreshToken,
             HttpServletResponse response,

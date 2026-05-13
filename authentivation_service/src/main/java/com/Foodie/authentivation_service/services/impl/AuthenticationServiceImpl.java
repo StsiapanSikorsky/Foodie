@@ -55,7 +55,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     ) {
 
         //TODO:Добавить валидацию пароля
-        //TODO:Добавить рефреш токен
 
         Role userRole = roleRepository.findByName(UserRole.USER.getRole())
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage()));

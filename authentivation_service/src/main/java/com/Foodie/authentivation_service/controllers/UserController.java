@@ -4,6 +4,8 @@ import com.Foodie.authentivation_service.dto.UserDto;
 import com.Foodie.authentivation_service.requests.user.UpdateUserRequest;
 import com.Foodie.authentivation_service.responce.user.UserResponse;
 import com.Foodie.authentivation_service.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +17,16 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("${end.point.user}")
+@Tag(name = "User controller")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping("${end.point.id}")
+    @Operation(
+            summary = "Получение пользователя по id",
+            description = "Получение пользователя с ролью USER по id"
+    )
     public ResponseEntity<UserResponse<UserDto>> getUserById(
             @PathVariable (name = "id") Integer id
     ){
@@ -30,6 +37,10 @@ public class UserController {
     }
 
     @PutMapping("${end.point.id}")
+    @Operation(
+            summary = "Обновление пользователя по id",
+            description = "Обновление данных пользователя с ролью USER по id"
+    )
     public ResponseEntity<UserResponse<UserDto>> updateUser(
             @PathVariable (name = "id") Integer id,
             @RequestBody @Valid UpdateUserRequest request
@@ -41,6 +52,10 @@ public class UserController {
     }
 
     @DeleteMapping("${end.point.id}")
+    @Operation(
+            summary = "Удаление пользователя по id",
+            description = "Удаление пользователя с ролью USER по id"
+    )
     public ResponseEntity<UserResponse<UserDto>> softDeleteUser(
             @PathVariable (name = "id") Integer id
     ){
