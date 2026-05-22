@@ -9,29 +9,16 @@ import org.springframework.context.annotation.Configuration;
 public class AuthenticationServiceGatewayConfig {
 
     @Bean
-    public RouteLocator authentRouteLocator(RouteLocatorBuilder builder) {
+    public RouteLocator authenticationRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("auth-service", r -> r
-                        .path("/authentication/**")
+                        .path(
+                                "/authentication/**",
+                                "/owner/**",
+                                "/user/**"
+                        )
                         .uri("http://localhost:8197"))
                 .build();
     }
 
-    @Bean
-    public RouteLocator ownerRouteLocator(RouteLocatorBuilder builder) {
-        return builder.routes()
-                .route("auth-service", r -> r
-                        .path("/owner/**")
-                        .uri("http://localhost:8197"))
-                .build();
-    }
-
-    @Bean
-    public RouteLocator userRouteLocator(RouteLocatorBuilder builder) {
-        return builder.routes()
-                .route("auth-service", r -> r
-                        .path("/user/**")
-                        .uri("http://localhost:8197"))
-                .build();
-    }
 }
