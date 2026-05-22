@@ -3,6 +3,7 @@ package com.Foodie.authentivation_service.controllers;
 import com.Foodie.authentivation_service.dto.UserProfileDto;
 import com.Foodie.authentivation_service.requests.authentication.LoginRequest;
 import com.Foodie.authentivation_service.requests.authentication.RegistrationRequest;
+import com.Foodie.authentivation_service.responce.authentication.AuthenticationRefreshResponse;
 import com.Foodie.authentivation_service.responce.authentication.AuthenticationResponse;
 import com.Foodie.authentivation_service.responce.authentication.TokenValidationResponse;
 import com.Foodie.authentivation_service.services.AuthenticationService;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -116,6 +116,8 @@ public class AuthenticationController {
     public ResponseEntity<TokenValidationResponse> validateToken(
             @RequestHeader("Authorization") String authHeader
     ) {
+        System.out.println("Вызов метода /validate с: " + authHeader);
+
         String token = authHeader != null && authHeader.startsWith("Bearer ")
                 ? authHeader.substring(7)
                 : null;
@@ -130,21 +132,20 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
-    //TODO:Проверить через API Gateway при 401
-    @PostMapping("${end.point.refresh.token}")
+    @GetMapping("${end.point.refresh.token}")
     @Operation(
             summary = "Обновление JWT токена",
             description = "Обновление JWT токена с проверкой RefreshToken"
     )
-    public ResponseEntity<AuthenticationResponse<UserProfileDto>> refreshToken(
-            @RequestParam(name = "token") String refreshToken,
-            HttpServletResponse response,
-            Authentication authentication)
+    public ResponseEntity<AuthenticationRefreshResponse> refreshToken(
+            @RequestHeader(name = "REFRESH_TOKEN") String refreshToken,
+            HttpServletResponse response
+    )
     {
-        AuthenticationResponse<UserProfileDto> result = authenticationService.refreshAccessToken(refreshToken);
+        AuthenticationRefreshResponse result = authenticationService.refreshAccessToken(refreshToken);
 
-        Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getPayload().getToken());
-        Cookie refreshtokenCookie = Utils.creauteRefreshTokenCookie(result.getPayload().getRefreshToken());
+        Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getToken());
+        Cookie refreshtokenCookie = Utils.creauteRefreshTokenCookie(result.getRefreshToken());
         response.addCookie(authorizationCookie);
         response.addCookie(refreshtokenCookie);
 

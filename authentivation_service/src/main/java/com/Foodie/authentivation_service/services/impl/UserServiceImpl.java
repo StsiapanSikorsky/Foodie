@@ -32,8 +32,6 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final AccessValidator accessValidator;
 
-    //TODO:Посмотреть может ли OWNER пользоваться (по идее Security блочит)
-
     @Override
     public UserResponse<UserDto> getUserById(
             @NotNull Integer id

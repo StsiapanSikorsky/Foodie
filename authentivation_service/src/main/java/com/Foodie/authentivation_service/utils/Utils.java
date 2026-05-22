@@ -28,7 +28,7 @@ public class Utils {
         authorizationCookie.setHttpOnly(true);
         authorizationCookie.setSecure(true);
         authorizationCookie.setPath("/");
-        authorizationCookie.setMaxAge(300);
+        authorizationCookie.setMaxAge(15 * 60);
         return authorizationCookie;
     }
 
@@ -39,7 +39,7 @@ public class Utils {
         refreshtokenCookie.setHttpOnly(true);
         refreshtokenCookie.setSecure(true);
         refreshtokenCookie.setPath("/");
-        refreshtokenCookie.setMaxAge(100);
+        refreshtokenCookie.setMaxAge(30 * 24 * 60 * 60);
         return refreshtokenCookie;
     }
 

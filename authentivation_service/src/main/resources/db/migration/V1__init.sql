@@ -27,6 +27,7 @@ CREATE TABLE refresh_token (
     refresh_token VARCHAR(100) NOT NULL UNIQUE ,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER NOT NULL ,
+    expiry_date TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
     CONSTRAINT FK_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

@@ -2,14 +2,14 @@
 <project version="4">
   <component name="AmplicodePersistenceUnitSettings">
     <persistence-units>
-      <persistence-unit moduleName="restaurant_service" name="Default">
-        <packages>
-          <package value="com.Foodie.restaurant_service" />
-        </packages>
-      </persistence-unit>
       <persistence-unit moduleName="authentivation_service" name="Default">
         <packages>
           <package value="com.Foodie.authentivation_service" />
+        </packages>
+      </persistence-unit>
+      <persistence-unit moduleName="restaurant_service" name="Default">
+        <packages>
+          <package value="com.Foodie.restaurant_service" />
         </packages>
       </persistence-unit>
     </persistence-units>

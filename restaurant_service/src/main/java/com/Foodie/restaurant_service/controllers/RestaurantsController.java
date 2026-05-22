@@ -9,6 +9,11 @@ import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest
 import com.Foodie.restaurant_service.responce.PaginationResponce;
 import com.Foodie.restaurant_service.responce.RestaurantResponce;
 import com.Foodie.restaurant_service.service.RestaurantService;
+import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.utils.Utils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,53 +46,77 @@ public class RestaurantsController {
     @PostMapping("${end.point.add}")
     public ResponseEntity<RestaurantResponce<RestaurantDto>> addRestaurant(
             @RequestBody @Valid RestaurantRequest request,
-            @CookieValue(name = "Authorization", required = false) String jwtToken
+            @CookieValue(name = "Authorization", required = false) String jwtToken,
+            @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
+            HttpServletResponse response
     ){
         if(jwtToken == null) {
-            throw new NotFoundException("Token not found in cookie");
+            throw new NotFoundException("Jwt token not found in cookie");
         }
 
-        RestaurantResponce<RestaurantDto> response =
+        if(refreshToken == null) {
+            throw new NotFoundException("Refresh token not found in cookie");
+        }
+
+        RestaurantResponce<RestaurantDto> result =
                 restaurantService.addNewRestaurant(
                         request,
-                        "Bearer " + jwtToken
+                        "Bearer " + jwtToken,
+                        refreshToken,
+                        response
                 );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     @PutMapping("${end.point.id}")
     public ResponseEntity<RestaurantResponce<RestaurantDto>> updateRestaurant(
             @PathVariable (name = "id") Integer id,
             @RequestBody @Valid UpdateRestaurantRequest request,
-            @CookieValue (name = "Authorization", required = false) String jwtToken
+            @CookieValue (name = "Authorization", required = false) String jwtToken,
+            @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
+            HttpServletResponse response
     ){
         if(jwtToken == null) {
-            throw new NotFoundException("Token not found in cookie");
+            throw new NotFoundException(ErrorMessage.TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
         }
 
-        RestaurantResponce<RestaurantDto> response = restaurantService.updateRestaurant(
+        if(refreshToken == null) {
+            throw new NotFoundException(ErrorMessage.REFRESH_TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
+        }
+
+        RestaurantResponce<RestaurantDto> result = restaurantService.updateRestaurant(
                 id,
                 request,
-                "Bearer " + jwtToken
+                "Bearer " + jwtToken,
+                refreshToken,
+                response
         );
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(response);
+                .body(result);
     }
 
     @DeleteMapping("${end.point.id}")
     public ResponseEntity<Void> softDeleteRestaurant(
             @PathVariable(name = "id") Integer  id,
-            @CookieValue(name = "Authorization", required = false) String jwtToken
+            @CookieValue(name = "Authorization", required = false) String jwtToken,
+            @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
+            HttpServletResponse response
     ){
         if(jwtToken == null) {
-            throw new UnauthorizedException("Token not found in cookie");
+            throw new UnauthorizedException(ErrorMessage.TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
+        }
+
+        if(refreshToken == null) {
+            throw new NotFoundException(ErrorMessage.REFRESH_TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
         }
 
         restaurantService.softDeleteRestaurant(
                 id,
-                "Bearer " + jwtToken
+                "Bearer " + jwtToken,
+                refreshToken,
+                response
         );
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT)

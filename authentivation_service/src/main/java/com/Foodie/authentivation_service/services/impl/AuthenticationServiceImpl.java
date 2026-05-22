@@ -13,6 +13,7 @@ import com.Foodie.authentivation_service.repository.RoleRepository;
 import com.Foodie.authentivation_service.repository.UserRepository;
 import com.Foodie.authentivation_service.requests.authentication.LoginRequest;
 import com.Foodie.authentivation_service.requests.authentication.RegistrationRequest;
+import com.Foodie.authentivation_service.responce.authentication.AuthenticationRefreshResponse;
 import com.Foodie.authentivation_service.responce.authentication.AuthenticationResponse;
 import com.Foodie.authentivation_service.responce.authentication.TokenValidationResponse;
 import com.Foodie.authentivation_service.security.JwtTokenService;
@@ -191,7 +192,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public AuthenticationResponse<UserProfileDto> refreshAccessToken(
+    public AuthenticationRefreshResponse refreshAccessToken(
             @NotNull String refreshTokenValue
     ) {
         RefreshToken refreshToken = refreshTokenService.validateAndRefreshRefreshToken(refreshTokenValue);
@@ -199,8 +200,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String jwtToken = jwtTokenService.generateToken(user);
 
-        UserProfileDto userProfileDto = userMapper.userToUserProfileDto(user, jwtToken, refreshTokenValue);
+        AuthenticationRefreshResponse response = new AuthenticationRefreshResponse(jwtToken, refreshToken.getRefreshToken());
 
-        return AuthenticationResponse.createSuccessfulWithNewToken(userProfileDto);
+        return response;
     }
 }

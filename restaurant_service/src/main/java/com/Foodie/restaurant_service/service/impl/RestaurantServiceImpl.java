@@ -12,9 +12,14 @@ import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import com.Foodie.restaurant_service.responce.PaginationResponce;
 import com.Foodie.restaurant_service.responce.RestaurantResponce;
+import com.Foodie.restaurant_service.responce.authentication.AuthenticationRefreshResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
 import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.utils.Utils;
+import feign.FeignException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -50,24 +55,22 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     public RestaurantResponce<RestaurantDto> addNewRestaurant(
            @NotNull RestaurantRequest request,
-           @NotNull String jwtToken
+           @NotNull String jwtToken,
+           @NotNull String refreshToken,
+           @NotNull HttpServletResponse response
     ) {
         if(restaurantRepository.existsByRestaurantName(request.getRestaurantName()))
         {
             throw new DataExistsException(ErrorMessage.RESTAURANT_EXISTS_BY_NAME.getMessage(request.getRestaurantName()));
         }
 
-        AuthenticationValidationResponse validation = authServiceClient.validateToken(jwtToken);
-        List<String> roles = validation.getRoles();
-        if (roles == null || (!roles.contains("OWNER") && !roles.contains("ADMIN"))) {
-            throw new IncorrectRoleException("Only owners can create restaurants");
-        }
-        if(!validation.isValid()){
-            throw new InvalidDataException("Invalid token");
+        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
+        if(!checkRole(validationResponse)){
+            throw new IncorrectRoleException(ErrorMessage.USER_ROLE_HAS_NOT_VALID.getMessage());
         }
 
         Restaurant restaurant = mapper.restaurantRequestToRestaurant(request);
-        restaurant.setOwnerId(validation.getUserId());
+        restaurant.setOwnerId(validationResponse.getUserId());
         restaurant = restaurantRepository.save(restaurant);
 
         return RestaurantResponce.createSuccessful(mapper.toRestaurantDto(restaurant));
@@ -77,25 +80,21 @@ public class RestaurantServiceImpl implements RestaurantService {
     public RestaurantResponce<RestaurantDto> updateRestaurant(
             @NotNull Integer restaurantId,
             @NotNull @Valid UpdateRestaurantRequest request,
-            @NotNull String jwtToken
+            @NotNull String jwtToken,
+            @NotNull String refreshToken,
+            @NotNull HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        AuthenticationValidationResponse validation = authServiceClient.validateToken(jwtToken);
-        if (!validation.isValid()) {
-            throw new UnauthorizedException("Invalid or expired token");
-        }
-        boolean isOwner = restaurant.getOwnerId().equals(validation.getUserId());
-        boolean isAdmin = validation.getRoles() != null && validation.getRoles().contains("ADMIN");
-        if (!isOwner && !isAdmin) {
-            throw new IncorrectRoleException("You don't have permission to delete this restaurant");
+        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
+        if (!isOwnerOrAdmin(restaurant, validationResponse)) {
+            throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
         Restaurant updatableRestaurant = mapper.updateRestaurantRequestToRestaurant(restaurant, request);
         updatableRestaurant.setUpdated(LocalDateTime.now());
         restaurantRepository.save(updatableRestaurant);
-
         RestaurantDto updatedRestaurantDto = mapper.toRestaurantDto(updatableRestaurant);
 
         return RestaurantResponce.createSuccessful(updatedRestaurantDto);
@@ -104,19 +103,16 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     public void softDeleteRestaurant(
             @NotNull Integer restaurantId,
-            @NotNull String jwtToken
+            @NotNull String jwtToken,
+            @NotNull String refreshToken,
+            @NotNull HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        AuthenticationValidationResponse validation = authServiceClient.validateToken(jwtToken);
-        if (!validation.isValid()) {
-            throw new UnauthorizedException("Invalid or expired token");
-        }
-        boolean isOwner = restaurant.getOwnerId().equals(validation.getUserId());
-        boolean isAdmin = validation.getRoles() != null && validation.getRoles().contains("ADMIN");
-        if (!isOwner && !isAdmin) {
-            throw new IncorrectRoleException("You don't have permission to delete this restaurant");
+        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
+        if (!isOwnerOrAdmin(restaurant, validationResponse)) {
+            throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
         restaurant.setDeleted(true);
@@ -162,5 +158,54 @@ public class RestaurantServiceImpl implements RestaurantService {
                 )
         );
         return RestaurantResponce.createSuccessful(response);
+    }
+
+
+    private AuthenticationValidationResponse checkValidTokens(
+            String jwtToken,
+            String refreshToken,
+            HttpServletResponse response
+    ){
+        AuthenticationValidationResponse validationResponse;
+
+        validationResponse = authServiceClient.validateToken(jwtToken);
+
+        if (!validationResponse.isValid()){
+            AuthenticationRefreshResponse refreshResponse = authServiceClient.refreshToken(refreshToken);
+            String updatedJwt = "Bearer " + refreshResponse.getToken();
+            validationResponse = authServiceClient.validateToken(updatedJwt);
+
+            setCookie(response, refreshResponse);
+        }
+        return validationResponse;
+    }
+
+    public void setCookie(
+            HttpServletResponse response,
+            AuthenticationRefreshResponse refreshResponse
+    ){
+        Cookie authenticationCookie = Utils.createAuthenticationCookie(refreshResponse.getToken());
+        Cookie refreshtokenCookie = Utils.creauteRefreshTokenCookie(refreshResponse.getRefreshToken());
+        response.addCookie(authenticationCookie);
+        response.addCookie(refreshtokenCookie);
+    }
+
+    public boolean checkRole(
+            AuthenticationValidationResponse validationResponse
+    ){
+        List<String> roles = validationResponse.getRoles();
+        if (roles == null || (!roles.contains("OWNER") && !roles.contains("ADMIN")))
+            return false;
+        else
+            return true;
+    }
+
+    public boolean isOwnerOrAdmin(
+            Restaurant restaurant,
+            AuthenticationValidationResponse validationResponse
+    ){
+        boolean isOwner = restaurant.getOwnerId().equals(validationResponse.getUserId());
+        boolean isAdmin = validationResponse.getRoles() != null && validationResponse.getRoles().contains("ADMIN");
+        return isOwner || isAdmin;
     }
 }

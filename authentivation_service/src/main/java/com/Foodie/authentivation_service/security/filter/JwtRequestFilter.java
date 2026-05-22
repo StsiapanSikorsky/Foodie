@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class JwtRequestFilter extends OncePerRequestFilter {
 
@@ -84,7 +84,25 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void handleTokenExpiration(String requestURI, String jwt, HttpServletResponse response) throws IOException {
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.contains("/authentication/refresh")
+                || uri.contains("/authentication/validate")
+                || uri.contains("/authentication/user/login")
+                || uri.contains("/authentication/user/register")
+                || uri.contains("/authentication/owner/login")
+                || uri.contains("/authentication/owner/register")
+                || uri.contains("/swagger-ui")
+                || uri.contains("/v3/api-docs");
+    }
+
+    private void handleTokenExpiration(
+            String requestURI,
+            String jwt,
+            HttpServletResponse response
+    ) throws IOException
+    {
         if (isAuthEndpoint(requestURI)) {
             String refreshedToken = jwtTokenService.refreshToken(jwt);
             response.setHeader(AUTHORIZATION_HEADER, BEARER_PREFIX + refreshedToken);
@@ -93,16 +111,26 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
     }
 
-    private void handleSignatureException(HttpServletResponse response) throws IOException {
+    private void handleSignatureException(
+            HttpServletResponse response
+    ) throws IOException
+    {
         sendErrorResponse(response, HttpStatus.UNAUTHORIZED, ErrorMessage.INVALID_TOKEN_SIGNATURE.getMessage());
     }
 
-    private void handleUnexpectedException(HttpServletResponse response, Exception e) throws IOException {
+    private void handleUnexpectedException(
+            HttpServletResponse response,
+            Exception e
+    ) throws IOException {
         log.error(ErrorMessage.ERROR_DURING_JWT_PROCESSING.getMessage(), e);
         sendErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR, ErrorMessage.UNEXPECTED_ERROR_OCCURRED.getMessage());
     }
 
-    private void sendErrorResponse(HttpServletResponse response, HttpStatus status, String message) throws IOException {
+    private void sendErrorResponse(
+            HttpServletResponse response,
+            HttpStatus status,
+            String message
+    ) throws IOException {
         response.setStatus(status.value());
         response.getWriter().write(message);
     }

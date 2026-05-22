@@ -1,5 +1,6 @@
 package com.Foodie.authentivation_service.services.impl;
 
+import com.Foodie.authentivation_service.advice.exception.InvalidDataException;
 import com.Foodie.authentivation_service.advice.exception.NotFoundException;
 import com.Foodie.authentivation_service.entity.RefreshToken;
 import com.Foodie.authentivation_service.entity.User;
@@ -29,6 +30,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .map(refreshToken -> {
                     refreshToken.setCreated(LocalDateTime.now());
                     refreshToken.setRefreshToken(UtilsRefreshToken.generateUuidWithoutDash());
+                    refreshToken.setExpiryDate(LocalDateTime.now().plusDays(30));
                     return refreshTokenRepository.save(refreshToken);
                 })
                 .orElseGet(() -> {
@@ -36,6 +38,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                     newToken.setUser(user);
                     newToken.setCreated(LocalDateTime.now());
                     newToken.setRefreshToken(UtilsRefreshToken.generateUuidWithoutDash());
+                    newToken.setExpiryDate(LocalDateTime.now().plusDays(30));
                     return refreshTokenRepository.save(newToken);
                 });
     }
@@ -44,11 +47,19 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshToken validateAndRefreshRefreshToken(
             String requestRefreshToken
     ) {
+        System.out.println("Вызов метода сервиса токена");
+
         RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(requestRefreshToken)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.NOT_FOUND_REFRESH_TOKEN.getMessage()));
 
+        if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Refresh token has expired");
+        }
+
         refreshToken.setCreated(LocalDateTime.now());
         refreshToken.setRefreshToken(UtilsRefreshToken.generateUuidWithoutDash());
+        refreshToken.setExpiryDate(LocalDateTime.now().plusDays(30));
+
         return refreshTokenRepository.save(refreshToken);
     }
 }

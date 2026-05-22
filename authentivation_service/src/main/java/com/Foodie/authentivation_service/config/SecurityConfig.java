@@ -30,7 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final AccessRegistrationHandler accessRegistrationHandler;
-    private final JwtRequestFilter jwtRequestFilter;
+    //private final JwtRequestFilter jwtRequestFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/authentication/owner/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/authentication/owner/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/authentication/validate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/authentication/refresh").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
@@ -81,14 +82,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/owner/{id}").hasAnyAuthority(ownerAccessSecurityRole())
                         .requestMatchers(HttpMethod.PUT, "/owner/{id}").hasAnyAuthority(ownerAccessSecurityRole())
                         .requestMatchers(HttpMethod.DELETE, "/owner/{id}").hasAnyAuthority(ownerAccessSecurityRole())
-
+                        
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                         .accessDeniedHandler(accessRegistrationHandler)
-                )
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+                );
+                //.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

@@ -50,4 +50,6 @@ public class CommandControllerAdvice {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(e.getMessage());
     }
+
+    
 }
