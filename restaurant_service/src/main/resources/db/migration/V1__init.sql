@@ -15,3 +15,12 @@ CREATE TABLE restaurants (
     updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     owner_id INTEGER NOT NULL
 );
+
+CREATE TABLE restaurant_table (
+    id BIGSERIAL PRIMARY KEY ,
+    number_of_table INTEGER NOT NULL ,
+    description TEXT ,
+    capacity INTEGER NOT NULL ,
+    restaurant_id BIGINT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE ,
+    CONSTRAINT unique_restaurant_table_number UNIQUE (restaurant_id, number_of_table)
+);

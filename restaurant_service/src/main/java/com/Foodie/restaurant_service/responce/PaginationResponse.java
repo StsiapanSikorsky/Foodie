@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaginationResponce<T> implements Serializable {
+public class PaginationResponse<T> implements Serializable {
 
     private List<T> content;
     private Pagination pagination;

@@ -1,18 +1,13 @@
 package com.Foodie.restaurant_service.controllers;
 
-import com.Foodie.restaurant_service.advice.exceptions.NotFoundException;
-import com.Foodie.restaurant_service.advice.exceptions.UnauthorizedException;
 import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.request.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
-import com.Foodie.restaurant_service.responce.PaginationResponce;
-import com.Foodie.restaurant_service.responce.RestaurantResponce;
+import com.Foodie.restaurant_service.responce.PaginationResponse;
+import com.Foodie.restaurant_service.responce.RestaurantResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
-import com.Foodie.restaurant_service.utils.ErrorMessage;
 import com.Foodie.restaurant_service.utils.Utils;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,30 +30,24 @@ public class RestaurantsController {
     private final RestaurantService restaurantService;
 
     @GetMapping("${end.point.id}")
-    public ResponseEntity<RestaurantResponce<RestaurantDto>> getRestaurantById(
+    public ResponseEntity<RestaurantResponse<RestaurantDto>> getRestaurantById(
             @PathVariable(name = "id") Integer id
     ){
-        RestaurantResponce<RestaurantDto> response = restaurantService.getRestaurantById(id);
+        RestaurantResponse<RestaurantDto> response = restaurantService.getRestaurantById(id);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(response);
     }
 
     @PostMapping("${end.point.add}")
-    public ResponseEntity<RestaurantResponce<RestaurantDto>> addRestaurant(
+    public ResponseEntity<RestaurantResponse<RestaurantDto>> addRestaurant(
             @RequestBody @Valid RestaurantRequest request,
             @CookieValue(name = "Authorization", required = false) String jwtToken,
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        if(jwtToken == null) {
-            throw new NotFoundException("Jwt token not found in cookie");
-        }
+        Utils.checkTokensInCookie(jwtToken, refreshToken);
 
-        if(refreshToken == null) {
-            throw new NotFoundException("Refresh token not found in cookie");
-        }
-
-        RestaurantResponce<RestaurantDto> result =
+        RestaurantResponse<RestaurantDto> result =
                 restaurantService.addNewRestaurant(
                         request,
                         "Bearer " + jwtToken,
@@ -70,22 +59,16 @@ public class RestaurantsController {
     }
 
     @PutMapping("${end.point.id}")
-    public ResponseEntity<RestaurantResponce<RestaurantDto>> updateRestaurant(
+    public ResponseEntity<RestaurantResponse<RestaurantDto>> updateRestaurant(
             @PathVariable (name = "id") Integer id,
             @RequestBody @Valid UpdateRestaurantRequest request,
             @CookieValue (name = "Authorization", required = false) String jwtToken,
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        if(jwtToken == null) {
-            throw new NotFoundException(ErrorMessage.TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
-        }
+        Utils.checkTokensInCookie(jwtToken, refreshToken);
 
-        if(refreshToken == null) {
-            throw new NotFoundException(ErrorMessage.REFRESH_TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
-        }
-
-        RestaurantResponce<RestaurantDto> result = restaurantService.updateRestaurant(
+        RestaurantResponse<RestaurantDto> result = restaurantService.updateRestaurant(
                 id,
                 request,
                 "Bearer " + jwtToken,
@@ -104,13 +87,7 @@ public class RestaurantsController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        if(jwtToken == null) {
-            throw new UnauthorizedException(ErrorMessage.TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
-        }
-
-        if(refreshToken == null) {
-            throw new NotFoundException(ErrorMessage.REFRESH_TOKEN_NOT_FOUND_IN_COOKIE.getMessage());
-        }
+        Utils.checkTokensInCookie(jwtToken, refreshToken);
 
         restaurantService.softDeleteRestaurant(
                 id,
@@ -124,31 +101,30 @@ public class RestaurantsController {
     }
 
     @GetMapping
-    public ResponseEntity<RestaurantResponce<PaginationResponce<RestaurantDto>>> getAllRestaurants(
+    public ResponseEntity<RestaurantResponse<PaginationResponse<RestaurantDto>>> getAllRestaurants(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "limit", defaultValue = "10") int limit
     ){
         Pageable pageable = PageRequest.of(page, limit);
-        RestaurantResponce<PaginationResponce<RestaurantDto>> response = restaurantService.getAllRestaurants(pageable);
+        RestaurantResponse<PaginationResponse<RestaurantDto>> response = restaurantService.getAllRestaurants(pageable);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(response);
     }
 
     @GetMapping("${end.point.search}")
-    public ResponseEntity<RestaurantResponce<PaginationResponce<RestaurantDto>>> searchRestaurants(
+    public ResponseEntity<RestaurantResponse<PaginationResponse<RestaurantDto>>> searchRestaurants(
         @RequestBody @Valid SearchRestaurantRequest request,
         @RequestParam (name = "page", defaultValue = "0") int page,
         @RequestParam (name = "limit", defaultValue = "10") int limit
     ){
         Pageable pageable = PageRequest.of(page, limit);
 
-        RestaurantResponce<PaginationResponce<RestaurantDto>> response = restaurantService.searchRestaurants(request, pageable);
+        RestaurantResponse<PaginationResponse<RestaurantDto>> response = restaurantService.searchRestaurants(request, pageable);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(response);
     }
-
 
     //TODO: Добавить логирование и Unit тесты
 }

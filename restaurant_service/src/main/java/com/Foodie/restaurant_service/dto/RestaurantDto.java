@@ -16,15 +16,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RestaurantDto {
-    Integer id;
-    String restaurantName;
-    String description;
-    String city;
-    String address;
-    RestaurantType type;
-    LocalTime workFromAtWeekend;
-    LocalTime workToAtWeekend;
-    LocalTime workFromAtWorkday;
-    LocalTime workToAtWorkday;
-    List<RestaurantWeekends> restaurantWeekends;
+    private Integer id;
+    private String restaurantName;
+    private String description;
+    private String city;
+    private String address;
+    private RestaurantType type;
+    private LocalTime workFromAtWeekend;
+    private LocalTime workToAtWeekend;
+    private LocalTime workFromAtWorkday;
+    private LocalTime workToAtWorkday;
+    private List<RestaurantWeekends> restaurantWeekends;
+    private List<RestaurantTableDto> tables;
 }

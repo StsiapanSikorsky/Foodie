@@ -1,6 +1,7 @@
 package com.Foodie.authentivation_service.utils;
 
 import com.Foodie.authentivation_service.enums.ErrorMessage;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.Cookie;
 import org.springframework.http.HttpHeaders;
@@ -42,5 +43,4 @@ public class Utils {
         refreshtokenCookie.setMaxAge(30 * 24 * 60 * 60);
         return refreshtokenCookie;
     }
-
 }

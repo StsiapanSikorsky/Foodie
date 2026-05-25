@@ -1,7 +1,6 @@
 package com.Foodie.restaurant_service.service.impl;
 
 import com.Foodie.restaurant_service.advice.exceptions.*;
-import com.Foodie.restaurant_service.controllers.feignAuthenticationService.AuthServiceClient;
 import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
 import com.Foodie.restaurant_service.mapper.RestaurantMapper;
@@ -10,15 +9,12 @@ import com.Foodie.restaurant_service.repository.criteria.RestaurantSearchCriteri
 import com.Foodie.restaurant_service.request.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
-import com.Foodie.restaurant_service.responce.PaginationResponce;
-import com.Foodie.restaurant_service.responce.RestaurantResponce;
-import com.Foodie.restaurant_service.responce.authentication.AuthenticationRefreshResponse;
+import com.Foodie.restaurant_service.responce.PaginationResponse;
+import com.Foodie.restaurant_service.responce.RestaurantResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
 import com.Foodie.restaurant_service.utils.ErrorMessage;
 import com.Foodie.restaurant_service.utils.Utils;
-import feign.FeignException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -30,7 +26,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 
 @Service
@@ -40,21 +35,21 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMapper mapper;
-    private final AuthServiceClient authServiceClient;
+    private final Utils utils;
 
     @Override
-    public RestaurantResponce<RestaurantDto> getRestaurantById(
+    public RestaurantResponse<RestaurantDto> getRestaurantById(
             @NotNull Integer restaurantId
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        return RestaurantResponce.createSuccessful(mapper.toRestaurantDto(restaurant));
+        return RestaurantResponse.createSuccessful(mapper.toRestaurantDto(restaurant));
     }
 
     @Override
-    public RestaurantResponce<RestaurantDto> addNewRestaurant(
-           @NotNull RestaurantRequest request,
+    public RestaurantResponse<RestaurantDto> addNewRestaurant(
+           @Valid @NotNull RestaurantRequest request,
            @NotNull String jwtToken,
            @NotNull String refreshToken,
            @NotNull HttpServletResponse response
@@ -64,8 +59,8 @@ public class RestaurantServiceImpl implements RestaurantService {
             throw new DataExistsException(ErrorMessage.RESTAURANT_EXISTS_BY_NAME.getMessage(request.getRestaurantName()));
         }
 
-        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
-        if(!checkRole(validationResponse)){
+        AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
+        if(!utils.checkRole(validationResponse)){
             throw new IncorrectRoleException(ErrorMessage.USER_ROLE_HAS_NOT_VALID.getMessage());
         }
 
@@ -73,13 +68,13 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurant.setOwnerId(validationResponse.getUserId());
         restaurant = restaurantRepository.save(restaurant);
 
-        return RestaurantResponce.createSuccessful(mapper.toRestaurantDto(restaurant));
+        return RestaurantResponse.createSuccessful(mapper.toRestaurantDto(restaurant));
     }
 
     @Override
-    public RestaurantResponce<RestaurantDto> updateRestaurant(
+    public RestaurantResponse<RestaurantDto> updateRestaurant(
             @NotNull Integer restaurantId,
-            @NotNull @Valid UpdateRestaurantRequest request,
+            @Valid @NotNull UpdateRestaurantRequest request,
             @NotNull String jwtToken,
             @NotNull String refreshToken,
             @NotNull HttpServletResponse response
@@ -87,8 +82,8 @@ public class RestaurantServiceImpl implements RestaurantService {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
-        if (!isOwnerOrAdmin(restaurant, validationResponse)) {
+        AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
+        if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
@@ -97,7 +92,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurantRepository.save(updatableRestaurant);
         RestaurantDto updatedRestaurantDto = mapper.toRestaurantDto(updatableRestaurant);
 
-        return RestaurantResponce.createSuccessful(updatedRestaurantDto);
+        return RestaurantResponse.createSuccessful(updatedRestaurantDto);
     }
 
     @Override
@@ -110,8 +105,8 @@ public class RestaurantServiceImpl implements RestaurantService {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        AuthenticationValidationResponse validationResponse = checkValidTokens(jwtToken, refreshToken, response);
-        if (!isOwnerOrAdmin(restaurant, validationResponse)) {
+        AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
+        if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
@@ -120,15 +115,15 @@ public class RestaurantServiceImpl implements RestaurantService {
     }
 
     @Override
-    public RestaurantResponce<PaginationResponce<RestaurantDto>> getAllRestaurants(
+    public RestaurantResponse<PaginationResponse<RestaurantDto>> getAllRestaurants(
             @NotNull Pageable pageable
     ) {
         Page<RestaurantDto> restaurants = restaurantRepository.findAll(pageable)
                 .map(mapper::toRestaurantDto);
 
-        PaginationResponce<RestaurantDto> response = new PaginationResponce<>(
+        PaginationResponse<RestaurantDto> response = new PaginationResponse<>(
                 restaurants.getContent(),
-                new PaginationResponce.Pagination(
+                new PaginationResponse.Pagination(
                         restaurants.getTotalElements(),
                         pageable.getPageSize(),
                         restaurants.getNumber() + 1,
@@ -136,11 +131,11 @@ public class RestaurantServiceImpl implements RestaurantService {
                 )
         );
 
-        return RestaurantResponce.createSuccessful(response);
+        return RestaurantResponse.createSuccessful(response);
     }
 
     @Override
-    public RestaurantResponce<PaginationResponce<RestaurantDto>> searchRestaurants(
+    public RestaurantResponse<PaginationResponse<RestaurantDto>> searchRestaurants(
             @NotNull SearchRestaurantRequest request,
             @NotNull Pageable pageable
     ) {
@@ -148,64 +143,16 @@ public class RestaurantServiceImpl implements RestaurantService {
         Page<RestaurantDto> restaurantsAfterFiltration = restaurantRepository.findAll(specification, pageable)
                 .map(mapper::toRestaurantDto);
 
-        PaginationResponce<RestaurantDto> response = new PaginationResponce<>(
+        PaginationResponse<RestaurantDto> response = new PaginationResponse<>(
                 restaurantsAfterFiltration.getContent(),
-                new PaginationResponce.Pagination(
+                new PaginationResponse.Pagination(
                     restaurantsAfterFiltration.getTotalElements(),
                     pageable.getPageSize(),
                     restaurantsAfterFiltration.getNumber() + 1,
                     restaurantsAfterFiltration.getTotalPages()
                 )
         );
-        return RestaurantResponce.createSuccessful(response);
+        return RestaurantResponse.createSuccessful(response);
     }
 
-
-    private AuthenticationValidationResponse checkValidTokens(
-            String jwtToken,
-            String refreshToken,
-            HttpServletResponse response
-    ){
-        AuthenticationValidationResponse validationResponse;
-
-        validationResponse = authServiceClient.validateToken(jwtToken);
-
-        if (!validationResponse.isValid()){
-            AuthenticationRefreshResponse refreshResponse = authServiceClient.refreshToken(refreshToken);
-            String updatedJwt = "Bearer " + refreshResponse.getToken();
-            validationResponse = authServiceClient.validateToken(updatedJwt);
-
-            setCookie(response, refreshResponse);
-        }
-        return validationResponse;
-    }
-
-    public void setCookie(
-            HttpServletResponse response,
-            AuthenticationRefreshResponse refreshResponse
-    ){
-        Cookie authenticationCookie = Utils.createAuthenticationCookie(refreshResponse.getToken());
-        Cookie refreshtokenCookie = Utils.creauteRefreshTokenCookie(refreshResponse.getRefreshToken());
-        response.addCookie(authenticationCookie);
-        response.addCookie(refreshtokenCookie);
-    }
-
-    public boolean checkRole(
-            AuthenticationValidationResponse validationResponse
-    ){
-        List<String> roles = validationResponse.getRoles();
-        if (roles == null || (!roles.contains("OWNER") && !roles.contains("ADMIN")))
-            return false;
-        else
-            return true;
-    }
-
-    public boolean isOwnerOrAdmin(
-            Restaurant restaurant,
-            AuthenticationValidationResponse validationResponse
-    ){
-        boolean isOwner = restaurant.getOwnerId().equals(validationResponse.getUserId());
-        boolean isAdmin = validationResponse.getRoles() != null && validationResponse.getRoles().contains("ADMIN");
-        return isOwner || isAdmin;
-    }
 }

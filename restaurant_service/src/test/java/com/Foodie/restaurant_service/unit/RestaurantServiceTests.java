@@ -5,7 +5,7 @@ import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
 import com.Foodie.restaurant_service.mapper.RestaurantMapper;
 import com.Foodie.restaurant_service.repository.RestaurantRepository;
-import com.Foodie.restaurant_service.responce.RestaurantResponce;
+import com.Foodie.restaurant_service.responce.RestaurantResponse;
 import com.Foodie.restaurant_service.service.impl.RestaurantServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ public class RestaurantServiceTests {
         when(restaurantRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(testRestaurant));
         when(restaurantMapper.toRestaurantDto(testRestaurant)).thenReturn(testRestaurantDto);
 
-        RestaurantResponce<RestaurantDto> result = restaurantService.getRestaurantById(1);
+        RestaurantResponse<RestaurantDto> result = restaurantService.getRestaurantById(1);
 
         assertNotNull(result);
         assertEquals(result.getPayload().getId(), testRestaurantDto.getId());

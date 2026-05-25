@@ -116,8 +116,6 @@ public class AuthenticationController {
     public ResponseEntity<TokenValidationResponse> validateToken(
             @RequestHeader("Authorization") String authHeader
     ) {
-        System.out.println("Вызов метода /validate с: " + authHeader);
-
         String token = authHeader != null && authHeader.startsWith("Bearer ")
                 ? authHeader.substring(7)
                 : null;

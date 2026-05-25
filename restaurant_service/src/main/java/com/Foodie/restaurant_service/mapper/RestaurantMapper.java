@@ -17,6 +17,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 )
 public interface RestaurantMapper {
 
+    @Mapping(target = "tables", source = "restaurantTables")
     RestaurantDto toRestaurantDto(Restaurant restaurant);
 
     @Mapping(target = "id", ignore = true)

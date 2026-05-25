@@ -8,12 +8,14 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.persistence.Table;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
 
 @Entity
 @Table(name = "restaurants")
@@ -76,9 +78,10 @@ public class Restaurant {
     @Column(name = "owner_id")
     private Integer ownerId;
 
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<RestaurantTable> restaurantTables = new ArrayList<>();
+
     //TODO:Попытаться связать дни недели и время, ка лучше?
-    //TODO:Добавить столики
     //TODO:Добавить ссылки на картинки в S3, подключить S3
-    //TODO:Добавить список лист собстевнников
     //TODO:Добавить оценки
 }

@@ -10,25 +10,17 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RestaurantResponce<T> implements Serializable {
+public class RestaurantResponse<T> implements Serializable {
 
     private String message;
     private T payload;
     private boolean success;
 
-    public static <T> RestaurantResponce<T> createSuccessful(T payload) {
-        RestaurantResponce<T> response = new RestaurantResponce<>();
+    public static <T> RestaurantResponse<T> createSuccessful(T payload) {
+        RestaurantResponse<T> response = new RestaurantResponse<>();
         response.setSuccess(true);
         response.setPayload(payload);
         response.setMessage(StringUtils.EMPTY);
-        return response;
-    }
-
-    public static <T> RestaurantResponce<T> createError(String message) {
-        RestaurantResponce<T> response = new RestaurantResponce<>();
-        response.setSuccess(false);
-        response.setMessage(message);
-        response.setPayload(null);
         return response;
     }
 }
