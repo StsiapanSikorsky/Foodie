@@ -78,10 +78,13 @@ public class Restaurant {
     @Column(name = "owner_id")
     private Integer ownerId;
 
+    @Column(name = "image_urls", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> imageUrls;
+
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RestaurantTable> restaurantTables = new ArrayList<>();
 
     //TODO:Попытаться связать дни недели и время, ка лучше?
-    //TODO:Добавить ссылки на картинки в S3, подключить S3
     //TODO:Добавить оценки
 }

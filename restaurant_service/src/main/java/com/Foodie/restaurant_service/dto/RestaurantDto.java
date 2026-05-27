@@ -27,5 +27,6 @@ public class RestaurantDto {
     private LocalTime workFromAtWorkday;
     private LocalTime workToAtWorkday;
     private List<RestaurantWeekends> restaurantWeekends;
+    private List<String> imageUrls;
     private List<RestaurantTableDto> tables;
 }

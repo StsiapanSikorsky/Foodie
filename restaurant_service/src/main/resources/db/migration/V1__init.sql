@@ -10,6 +10,7 @@ CREATE TABLE restaurants (
     work_from_at_workday TIME,
     work_to_at_workday TIME,
     restaurants_weekends JSONB,
+    image_urls JSONB,
     deleted BOOLEAN DEFAULT false,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

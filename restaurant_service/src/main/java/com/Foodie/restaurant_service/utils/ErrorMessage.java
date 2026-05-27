@@ -16,7 +16,12 @@ public enum ErrorMessage {
 
     DUPLICATE_TABLE_EXCEPTION("Table with number %s already exists in this restaurant"),
     TABLE_NOT_FOUND("Table with number %s was not found in restaurant wit id: %s"),
-    UNDEFINED("Undefined");
+    UNDEFINED("Undefined"),
+
+    FILE_DONT_DOWNLOAD("File dont download %s"),
+    NOT_FOUND_EXTENCION("Extension of file is void"),
+    IMAGE_URL_NOT_FOUND("ImageUrl: %s was not found in restaurant with id: %s"),
+    FILED_TO_UPLOAD_FILE("Failed to upload file %s");
 
     private final String message;
 

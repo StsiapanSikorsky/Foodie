@@ -154,5 +154,4 @@ public class RestaurantServiceImpl implements RestaurantService {
         );
         return RestaurantResponse.createSuccessful(response);
     }
-
 }
