@@ -84,7 +84,4 @@ public class Restaurant {
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RestaurantTable> restaurantTables = new ArrayList<>();
-
-    //TODO:Попытаться связать дни недели и время, ка лучше?
-    //TODO:Добавить оценки
 }

@@ -12,6 +12,11 @@
           <package value="com.Foodie.restaurant_service" />
         </packages>
       </persistence-unit>
+      <persistence-unit moduleName="booking_service" name="Default">
+        <packages>
+          <package value="com.Foodie.booking_service" />
+        </packages>
+      </persistence-unit>
     </persistence-units>
   </component>
 </project>
