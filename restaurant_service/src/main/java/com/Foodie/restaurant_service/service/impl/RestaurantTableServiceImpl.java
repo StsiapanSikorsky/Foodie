@@ -81,7 +81,7 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
                 .map(restaurantTableMapper::toRestaurantTableDto)
                 .collect(Collectors.toList());
 
-        PaginationResponse<RestaurantTableDto> paginationResponce = new PaginationResponse<>(
+        PaginationResponse<RestaurantTableDto> paginationResponse = new PaginationResponse<>(
                 restaurantTableDtos,
                 new PaginationResponse.Pagination(
                         page.getTotalElements(),
@@ -91,7 +91,7 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
                 )
         );
 
-        return RestaurantTableResponse.createSuccessful(paginationResponce);
+        return RestaurantTableResponse.createSuccessful(paginationResponse);
     }
 
     @Override
