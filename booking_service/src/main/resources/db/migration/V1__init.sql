@@ -8,5 +8,6 @@ CREATE TABLE booking (
     description VARCHAR(500),
     booking_from TIMESTAMP NOT NULL ,
     booking_to TIMESTAMP NOT NULL ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP default CURRENT_TIMESTAMP
 );

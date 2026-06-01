@@ -27,5 +27,4 @@ public class RestaurantTable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", nullable = false)
     private Restaurant restaurant;
-
 }

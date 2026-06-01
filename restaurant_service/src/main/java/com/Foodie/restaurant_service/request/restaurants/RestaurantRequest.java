@@ -1,4 +1,4 @@
-package com.Foodie.restaurant_service.request;
+package com.Foodie.restaurant_service.request.restaurants;
 
 import com.Foodie.restaurant_service.constants.RestaurantType;
 import com.Foodie.restaurant_service.constants.RestaurantWeekends;

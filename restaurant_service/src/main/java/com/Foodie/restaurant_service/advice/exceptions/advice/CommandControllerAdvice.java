@@ -51,5 +51,13 @@ public class CommandControllerAdvice {
                 .body(e.getMessage());
     }
 
+    @ExceptionHandler
+    protected ResponseEntity<String> handleNullExtensionException(
+            NullExtensionException e
+    ){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(e.getMessage());
+    }
+
     
 }

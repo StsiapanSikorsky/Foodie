@@ -3,15 +3,19 @@ package com.Foodie.restaurant_service.service.impl;
 import com.Foodie.restaurant_service.advice.exceptions.*;
 import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
+import com.Foodie.restaurant_service.entity.RestaurantTable;
 import com.Foodie.restaurant_service.mapper.RestaurantMapper;
 import com.Foodie.restaurant_service.repository.RestaurantRepository;
+import com.Foodie.restaurant_service.repository.RestaurantTableRepository;
 import com.Foodie.restaurant_service.repository.criteria.RestaurantSearchCriteria;
-import com.Foodie.restaurant_service.request.RestaurantRequest;
+import com.Foodie.restaurant_service.request.restaurants.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import com.Foodie.restaurant_service.responce.PaginationResponse;
 import com.Foodie.restaurant_service.responce.RestaurantResponse;
+import com.Foodie.restaurant_service.responce.RestaurantTableResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
+import com.Foodie.restaurant_service.responce.booking.RestaurantCheckResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
 import com.Foodie.restaurant_service.utils.ErrorMessage;
 import com.Foodie.restaurant_service.utils.Utils;
@@ -26,6 +30,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @Service
@@ -34,6 +39,7 @@ import java.time.LocalDateTime;
 public class RestaurantServiceImpl implements RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
+    private final RestaurantTableRepository tableRepository;
     private final RestaurantMapper mapper;
     private final Utils utils;
 
@@ -153,5 +159,26 @@ public class RestaurantServiceImpl implements RestaurantService {
                 )
         );
         return RestaurantResponse.createSuccessful(response);
+    }
+
+    @Override
+    public RestaurantCheckResponse existRestaurantByIdAndCheckOwner(
+            @NotNull Integer restaurantId,
+            @NotNull Integer userId,
+            @NotNull Integer numberOfTable
+    ) {
+        Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+
+        if(tableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId ,numberOfTable))
+            throw new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+
+        boolean isOwner = Objects.equals(restaurant.getOwnerId(), userId);
+
+        return RestaurantCheckResponse.builder()
+                .restaurantId(restaurant.getId())
+                .owner(isOwner)
+                .numberOfTable(numberOfTable)
+                .build();
     }
 }

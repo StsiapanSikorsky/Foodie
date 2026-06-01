@@ -2,7 +2,7 @@ package com.Foodie.restaurant_service.mapper;
 
 import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
-import com.Foodie.restaurant_service.request.RestaurantRequest;
+import com.Foodie.restaurant_service.request.restaurants.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import org.hibernate.type.descriptor.DateTimeUtils;
 import org.mapstruct.Mapper;

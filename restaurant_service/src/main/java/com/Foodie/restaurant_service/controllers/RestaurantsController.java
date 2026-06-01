@@ -1,11 +1,12 @@
 package com.Foodie.restaurant_service.controllers;
 
 import com.Foodie.restaurant_service.dto.RestaurantDto;
-import com.Foodie.restaurant_service.request.RestaurantRequest;
+import com.Foodie.restaurant_service.request.restaurants.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import com.Foodie.restaurant_service.responce.PaginationResponse;
 import com.Foodie.restaurant_service.responce.RestaurantResponse;
+import com.Foodie.restaurant_service.responce.booking.RestaurantCheckResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
 import com.Foodie.restaurant_service.utils.Utils;
 import jakarta.servlet.http.HttpServletResponse;
@@ -126,5 +127,18 @@ public class RestaurantsController {
                 .body(response);
     }
 
-    //TODO: Добавить логирование и Unit тесты
+    @GetMapping("/check/{restaurantId}/{userId}")
+    public ResponseEntity<RestaurantCheckResponse> existRestaurantByIdAndCheckOwner(
+            @PathVariable (name = "restaurantId") Integer restaurantId,
+            @PathVariable (name = "userId") Integer userId,
+            @PathVariable (name = "numberOfTable") Integer numberOfTable
+    ){
+        RestaurantCheckResponse result = restaurantService.existRestaurantByIdAndCheckOwner(restaurantId, userId, numberOfTable);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(result);
+    }
+
+
+    //TODO: Добавить логирование
 }
