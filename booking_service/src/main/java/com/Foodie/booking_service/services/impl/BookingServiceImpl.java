@@ -41,6 +41,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final AuthenticationUtils authenticationUtils;
 
+
+    //TODO:Добавить в эндпоинты поиск бронирований без статуса CANCELED
+
     @Override
     public BookingResponse<BookingDto> createBooking(
             @NotNull Integer restaurantId,
@@ -125,7 +128,7 @@ public class BookingServiceImpl implements BookingService {
         if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()) || validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
 
-        Integer restaurantId = restaurantServiceClient.checkIsOwner(validationResponse.getUserId());
+        Integer restaurantId = restaurantServiceClient.getRestaurantIdWhenUserIsOwner(validationResponse.getUserId());
 
         Page<BookingDto> bookings = bookingRepository.findAllByRestaurantId(restaurantId, pageable)
                 .map(bookingMapper::toBookingDto);
@@ -189,7 +192,26 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public void softDeleteBooking() {
+    public void softDeleteBooking(
+            @NotNull Long bookingId,
+            @NotNull String jwtToken,
+            @NotNull String refreshToken,
+            HttpServletResponse response
+    ) {
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
 
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
+
+        Boolean isOwner = restaurantServiceClient.checkRestaurantOwner(booking.getRestaurantId(), validationResponse.getUserId());
+
+        if(isOwner || validationResponse.getUserId().equals(booking.getUserId())){
+            booking.setStatus(BookingStatus.CANCELED);
+            booking.setUpdatedAt(LocalDateTime.now());
+            bookingRepository.save(booking);
+        }
+        else {
+            throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
+        }
     }
 }

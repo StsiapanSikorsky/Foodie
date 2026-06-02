@@ -43,11 +43,4 @@ public interface RestaurantService {
             @NotNull SearchRestaurantRequest request,
             @NotNull Pageable pageable);
 
-    RestaurantCheckResponse existRestaurantByIdAndCheckOwner(
-            @NotNull Integer restaurantId,
-            @NotNull Integer userId,
-            @NotNull Integer numberOfTable);
-
-    Integer checkIsOwner(
-            @NotNull Integer ownerId);
 }

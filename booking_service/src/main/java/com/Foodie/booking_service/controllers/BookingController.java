@@ -125,4 +125,24 @@ public class BookingController {
                 .body(result);
     }
 
+    @DeleteMapping("${end.point.bookingId}")
+    public ResponseEntity<Void> softDeleteBooking(
+            @PathVariable (name = "bookingId") Long bookingId,
+            @CookieValue (name = "Authorization", required = false) String jwtToken,
+            @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
+            HttpServletResponse response
+    ){
+        String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
+
+        bookingService.softDeleteBooking(
+                bookingId,
+                "Bearer " + checkedJwt,
+                refreshToken,
+                response
+        );
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .build();
+    }
+
 }

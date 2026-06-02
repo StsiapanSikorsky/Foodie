@@ -46,5 +46,10 @@ public interface BookingService {
             HttpServletResponse response
     );
 
-    void softDeleteBooking();
+    void softDeleteBooking(
+            @NotNull Long bookingId,
+            @NotNull String jwtToken,
+            @NotNull String refreshToken,
+            HttpServletResponse response
+    );
 }

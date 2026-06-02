@@ -160,36 +160,4 @@ public class RestaurantServiceImpl implements RestaurantService {
         );
         return RestaurantResponse.createSuccessful(response);
     }
-
-    @Override
-    public RestaurantCheckResponse existRestaurantByIdAndCheckOwner(
-            @NotNull Integer restaurantId,
-            @NotNull Integer userId,
-            @NotNull Integer numberOfTable
-    ) {
-        Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
-
-        if(!tableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId ,numberOfTable))
-            throw new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
-
-        boolean isOwner = Objects.equals(restaurant.getOwnerId(), userId);
-
-        return RestaurantCheckResponse.builder()
-                .restaurantId(restaurant.getId())
-                .owner(isOwner)
-                .numberOfTable(numberOfTable)
-                .guests(restaurant.getRestaurantTables().get(numberOfTable - 1).getCapacity())
-                .build();
-    }
-
-    @Override
-    public Integer checkIsOwner(
-            @NotNull Integer ownerId
-    ) {
-        Restaurant restaurant = restaurantRepository.findByOwnerId(ownerId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND_WITH_OWNER_ID.getMessage(ownerId)));
-
-        return restaurant.getId();
-    }
 }

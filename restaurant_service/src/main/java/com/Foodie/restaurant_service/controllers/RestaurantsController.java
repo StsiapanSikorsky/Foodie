@@ -127,30 +127,4 @@ public class RestaurantsController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(result);
     }
-
-    /** Контроллеры для сервиса бронирования**/
-    @GetMapping("/check/{restaurantId}/{userId}/{numberOfTable}")
-    public ResponseEntity<RestaurantCheckResponse> existRestaurantByIdAndCheckOwner(
-            @PathVariable (name = "restaurantId") Integer restaurantId,
-            @PathVariable (name = "userId") Integer userId,
-            @PathVariable (name = "numberOfTable") Integer numberOfTable
-    ){
-        RestaurantCheckResponse result = restaurantService.existRestaurantByIdAndCheckOwner(restaurantId, userId, numberOfTable);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(result);
-    }
-
-    @GetMapping("/checkOwner/{ownerId}")
-    ResponseEntity<Integer> checkIsOwner(
-            @PathVariable (name = "ownerId") Integer ownerId
-    ){
-        Integer result = restaurantService.checkIsOwner(ownerId);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(result);
-    }
-
-
-    //TODO: Добавить логирование
 }
