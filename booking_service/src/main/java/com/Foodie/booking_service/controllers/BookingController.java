@@ -3,6 +3,7 @@ package com.Foodie.booking_service.controllers;
 
 import com.Foodie.booking_service.dto.BookingDto;
 import com.Foodie.booking_service.request.BookingRequest;
+import com.Foodie.booking_service.request.UpdateBookingRequest;
 import com.Foodie.booking_service.response.BookingResponse;
 import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.services.BookingService;
@@ -102,5 +103,26 @@ public class BookingController {
                 .body(result);
     }
 
+    @PutMapping("${end.point.bookingId}")
+    public ResponseEntity<BookingResponse<BookingDto>> updateBooking(
+            @PathVariable (name = "bookingId") Long bookingId,
+            @RequestBody @Valid UpdateBookingRequest updateBookingRequest,
+            @CookieValue (name = "Authorization", required = false) String jwtToken,
+            @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
+            HttpServletResponse response
+    ){
+        String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
+
+        BookingResponse<BookingDto> result = bookingService.updateBooking(
+                bookingId,
+                updateBookingRequest,
+                "Bearer " + checkedJwt,
+                refreshToken,
+                response
+        );
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(result);
+    }
 
 }

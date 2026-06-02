@@ -11,6 +11,7 @@ import com.Foodie.booking_service.enums.UserRole;
 import com.Foodie.booking_service.mapper.BookingMapper;
 import com.Foodie.booking_service.repository.BookingRepository;
 import com.Foodie.booking_service.request.BookingRequest;
+import com.Foodie.booking_service.request.UpdateBookingRequest;
 import com.Foodie.booking_service.response.BookingResponse;
 import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.response.authentication.AuthenticationValidationResponse;
@@ -20,12 +21,15 @@ import com.Foodie.booking_service.utils.ErrorMessage;
 import com.Foodie.booking_service.utils.AuthenticationUtils;
 import feign.FeignException;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -48,7 +52,11 @@ public class BookingServiceImpl implements BookingService {
         AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
 
         try {
-            RestaurantCheckResponse checkRestaurantAndRoleRequest = restaurantServiceClient.getRestaurantIdAndCheckOwner(restaurantId, validationResponse.getUserId(), bookingRequest.getTableNumber());
+            RestaurantCheckResponse checkRestaurantAndRoleRequest = restaurantServiceClient.getRestaurantIdAndCheckOwner(
+                    restaurantId,
+                    validationResponse.getUserId(),
+                    bookingRequest.getTableNumber()
+            );
 
             if(bookingRequest.getGuests() > checkRestaurantAndRoleRequest.getGuests())
                 throw new BookingConflictException(ErrorMessage.GUESTS_CONFLICT.getMessage(checkRestaurantAndRoleRequest.getGuests()));
@@ -114,7 +122,7 @@ public class BookingServiceImpl implements BookingService {
     ) {
         AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
 
-        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()))
+        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()) || validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
 
         Integer restaurantId = restaurantServiceClient.checkIsOwner(validationResponse.getUserId());
@@ -136,8 +144,48 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingResponse<BookingDto> updateBooking() {
-        return null;
+    public BookingResponse<BookingDto> updateBooking(
+            @NotNull Long bookingId,
+            @NotNull @Valid UpdateBookingRequest updateBookingRequest,
+            @NotNull String jwtToken,
+            @NotNull String refreshToken,
+            HttpServletResponse response
+    ) {
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
+
+        try {
+            RestaurantCheckResponse checkRestaurantAndRoleRequest = restaurantServiceClient.getRestaurantIdAndCheckOwner(
+                    booking.getRestaurantId(),
+                    validationResponse.getUserId(),
+                    updateBookingRequest.getTableNumber()
+            );
+
+            if(booking.getUserId().equals(validationResponse.getUserId()))
+                if(!checkRestaurantAndRoleRequest.isOwner())
+                    throw new IncorrectRoleException("");
+
+            if(updateBookingRequest.getGuests() > checkRestaurantAndRoleRequest.getGuests())
+                throw new BookingConflictException(ErrorMessage.GUESTS_CONFLICT.getMessage(checkRestaurantAndRoleRequest.getGuests()));
+        }
+        catch (FeignException.NotFound e){
+            throw new NotFoundException(e.contentUTF8());
+        }
+
+        if(bookingRepository.existsConflictingBooking(
+                booking.getRestaurantId(),
+                updateBookingRequest.getTableNumber(),
+                updateBookingRequest.getBookingFrom(),
+                updateBookingRequest.getBookingTo()))
+            throw new BookingConflictException(ErrorMessage.BOOKING_CONFLICT.getMessage());
+
+        Booking updatedBooking = bookingMapper.updatedBookingRequestToBooking(booking, updateBookingRequest);
+        updatedBooking.setUpdatedAt(LocalDateTime.now());
+        bookingRepository.save(updatedBooking);
+
+        return BookingResponse.createSuccessful(bookingMapper.toBookingDto(updatedBooking));
     }
 
     @Override

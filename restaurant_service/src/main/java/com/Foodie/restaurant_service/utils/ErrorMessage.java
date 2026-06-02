@@ -15,7 +15,7 @@ public enum ErrorMessage {
     REFRESH_TOKEN_NOT_FOUND_IN_COOKIE("Refresh token not found in cookie"),
 
     DUPLICATE_TABLE_EXCEPTION("Table with number %s already exists in this restaurant"),
-    TABLE_NOT_FOUND("Table with number %s was not found in restaurant wit id: %s"),
+    TABLE_NOT_FOUND("Table with number %s was not found in restaurant with id: %s"),
     UNDEFINED("Undefined"),
 
     FILE_DONT_DOWNLOAD("File dont download %s"),
