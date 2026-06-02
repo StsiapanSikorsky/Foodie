@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class TableController {
 
     private final RestaurantTableService restaurantTableService;
+    private final Utils utils;
 
     @PostMapping
     public ResponseEntity<RestaurantTableResponse<RestaurantTableDto>> addRestaurantTable(
@@ -36,12 +37,12 @@ public class TableController {
             HttpServletResponse response
 
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         RestaurantTableResponse<RestaurantTableDto> result = restaurantTableService.addRestaurantTable(
                 id,
                 request,
-                "Bearer " + jwtToken,
+                "Bearer " + checkedJwt,
                 refreshToken,
                 response
         );
@@ -83,13 +84,13 @@ public class TableController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         RestaurantTableResponse<RestaurantTableDto> result = restaurantTableService.updateTable(
                 id,
                 numberOfTable,
                 request,
-                "Bearer " + jwtToken,
+                "Bearer " + checkedJwt,
                 refreshToken,
                 response
         );
@@ -106,12 +107,12 @@ public class TableController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         restaurantTableService.deleteTable(
                 id,
                 numberOfTable,
-                "Bearer " + jwtToken,
+                "Bearer " + checkedJwt,
                 refreshToken,
                 response
         );

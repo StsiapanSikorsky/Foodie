@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 public class RestaurantsController {
 
     private final RestaurantService restaurantService;
+    private final Utils utils;
 
     @GetMapping("${end.point.id}")
     public ResponseEntity<RestaurantResponse<RestaurantDto>> getRestaurantById(
@@ -46,12 +47,12 @@ public class RestaurantsController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         RestaurantResponse<RestaurantDto> result =
                 restaurantService.addNewRestaurant(
                         request,
-                        "Bearer " + jwtToken,
+                        "Bearer " + checkedJwt,
                         refreshToken,
                         response
                 );
@@ -67,12 +68,12 @@ public class RestaurantsController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         RestaurantResponse<RestaurantDto> result = restaurantService.updateRestaurant(
                 id,
                 request,
-                "Bearer " + jwtToken,
+                "Bearer " + checkedJwt,
                 refreshToken,
                 response
         );
@@ -88,11 +89,11 @@ public class RestaurantsController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         restaurantService.softDeleteRestaurant(
                 id,
-                "Bearer " + jwtToken,
+                "Bearer " + checkedJwt,
                 refreshToken,
                 response
         );
@@ -127,7 +128,7 @@ public class RestaurantsController {
                 .body(response);
     }
 
-    @GetMapping("/check/{restaurantId}/{userId}")
+    @GetMapping("/check/{restaurantId}/{userId}/{numberOfTable}")
     public ResponseEntity<RestaurantCheckResponse> existRestaurantByIdAndCheckOwner(
             @PathVariable (name = "restaurantId") Integer restaurantId,
             @PathVariable (name = "userId") Integer userId,

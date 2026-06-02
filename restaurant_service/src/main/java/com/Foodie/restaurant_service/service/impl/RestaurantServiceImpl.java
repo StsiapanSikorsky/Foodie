@@ -170,7 +170,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
 
-        if(tableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId ,numberOfTable))
+        if(!tableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId ,numberOfTable))
             throw new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
 
         boolean isOwner = Objects.equals(restaurant.getOwnerId(), userId);
@@ -179,6 +179,7 @@ public class RestaurantServiceImpl implements RestaurantService {
                 .restaurantId(restaurant.getId())
                 .owner(isOwner)
                 .numberOfTable(numberOfTable)
+                .guests(restaurant.getRestaurantTables().get(numberOfTable).getCapacity())
                 .build();
     }
 }

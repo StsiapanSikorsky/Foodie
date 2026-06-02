@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserBookingController {
 
     private final UserBookingService userBookingService;
+    private final Utils utils;
 
     @PostMapping("${end.point.restaurantId}")
     public ResponseEntity<BookingResponse<BookingDto>> createBooking(
@@ -30,13 +31,13 @@ public class UserBookingController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        Utils.checkTokensInCookie(jwtToken, refreshToken);
+        String checkedJwt = utils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         BookingResponse<BookingDto> result = userBookingService.createBooking(
                 restaurantId,
                 bookingRequest,
-                jwtToken,
-                "Bearer " + refreshToken,
+                "Bearer " + checkedJwt,
+                refreshToken,
                 response
         );
 

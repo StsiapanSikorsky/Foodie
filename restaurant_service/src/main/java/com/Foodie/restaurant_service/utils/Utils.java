@@ -39,7 +39,7 @@ public class Utils {
         return authorizationCookie;
     }
 
-    public static Cookie creauteRefreshTokenCookie(
+    public static Cookie createRefreshTokenCookie(
             String value
     ){
         Cookie refreshtokenCookie = new Cookie("REFRESH_TOKEN", value);
@@ -74,7 +74,7 @@ public class Utils {
             AuthenticationRefreshResponse refreshResponse
     ){
         Cookie authenticationCookie = Utils.createAuthenticationCookie(refreshResponse.getToken());
-        Cookie refreshtokenCookie = Utils.creauteRefreshTokenCookie(refreshResponse.getRefreshToken());
+        Cookie refreshtokenCookie = Utils.createRefreshTokenCookie(refreshResponse.getRefreshToken());
         response.addCookie(authenticationCookie);
         response.addCookie(refreshtokenCookie);
     }
@@ -98,16 +98,22 @@ public class Utils {
         return isOwner || isAdmin;
     }
 
-    public static void checkTokensInCookie(
+    public String checkTokensInCookie(
             String jwtToken,
-            String refreshToken
+            String refreshToken,
+            HttpServletResponse response
     ){
-        if(jwtToken == null) {
-            throw new NotFoundException("Jwt token not found in cookie");
-        }
-
         if(refreshToken == null) {
             throw new NotFoundException("Refresh token not found in cookie");
         }
+        if(jwtToken == null) {
+            AuthenticationRefreshResponse refreshResponse = authServiceClient.refreshToken(refreshToken);
+            String updatedJwt = "Bearer " + refreshResponse.getToken();
+            AuthenticationValidationResponse validationResponse = authServiceClient.validateToken(updatedJwt);
+
+            setCookie(response, refreshResponse);
+            return refreshResponse.getToken();
+        }
+        return jwtToken;
     }
 }

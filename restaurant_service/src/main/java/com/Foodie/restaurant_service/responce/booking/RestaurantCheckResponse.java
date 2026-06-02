@@ -14,4 +14,5 @@ public class RestaurantCheckResponse {
     boolean owner;
     Integer restaurantId;
     Integer numberOfTable;
+    Integer guests;
 }
