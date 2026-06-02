@@ -179,7 +179,17 @@ public class RestaurantServiceImpl implements RestaurantService {
                 .restaurantId(restaurant.getId())
                 .owner(isOwner)
                 .numberOfTable(numberOfTable)
-                .guests(restaurant.getRestaurantTables().get(numberOfTable).getCapacity())
+                .guests(restaurant.getRestaurantTables().get(numberOfTable - 1).getCapacity())
                 .build();
+    }
+
+    @Override
+    public Integer checkIsOwner(
+            @NotNull Integer ownerId
+    ) {
+        Restaurant restaurant = restaurantRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND_WITH_OWNER_ID.getMessage(ownerId)));
+
+        return restaurant.getId();
     }
 }

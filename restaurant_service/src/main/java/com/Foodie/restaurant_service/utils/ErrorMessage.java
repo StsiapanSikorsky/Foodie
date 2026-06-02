@@ -21,7 +21,9 @@ public enum ErrorMessage {
     FILE_DONT_DOWNLOAD("File dont download %s"),
     NOT_FOUND_EXTENCION("Extension of file is void"),
     IMAGE_URL_NOT_FOUND("ImageUrl: %s was not found in restaurant with id: %s"),
-    FILED_TO_UPLOAD_FILE("Failed to upload file %s");
+    FILED_TO_UPLOAD_FILE("Failed to upload file %s"),
+
+    RESTAURANT_NOT_FOUND_WITH_OWNER_ID("Restaurant not found with owner id: %s was not found");
 
     private final String message;
 

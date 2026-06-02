@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
-public class Utils {
+public class AuthenticationUtils {
 
     private final AuthenticationServiceClient authServiceClient;
 
@@ -58,8 +58,8 @@ public class Utils {
             HttpServletResponse response,
             AuthenticationRefreshResponse refreshResponse
     ){
-        Cookie authenticationCookie = Utils.createAuthenticationCookie(refreshResponse.getToken());
-        Cookie refreshtokenCookie = Utils.createRefreshTokenCookie(refreshResponse.getRefreshToken());
+        Cookie authenticationCookie = AuthenticationUtils.createAuthenticationCookie(refreshResponse.getToken());
+        Cookie refreshtokenCookie = AuthenticationUtils.createRefreshTokenCookie(refreshResponse.getRefreshToken());
         response.addCookie(authenticationCookie);
         response.addCookie(refreshtokenCookie);
     }

@@ -47,4 +47,7 @@ public interface RestaurantService {
             @NotNull Integer restaurantId,
             @NotNull Integer userId,
             @NotNull Integer numberOfTable);
+
+    Integer checkIsOwner(
+            @NotNull Integer ownerId);
 }

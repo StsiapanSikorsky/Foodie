@@ -35,9 +35,9 @@ public class RestaurantsController {
     public ResponseEntity<RestaurantResponse<RestaurantDto>> getRestaurantById(
             @PathVariable(name = "id") Integer id
     ){
-        RestaurantResponse<RestaurantDto> response = restaurantService.getRestaurantById(id);
+        RestaurantResponse<RestaurantDto> result = restaurantService.getRestaurantById(id);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(response);
+                .body(result);
     }
 
     @PostMapping("${end.point.add}")
@@ -108,10 +108,10 @@ public class RestaurantsController {
             @RequestParam(name = "limit", defaultValue = "10") int limit
     ){
         Pageable pageable = PageRequest.of(page, limit);
-        RestaurantResponse<PaginationResponse<RestaurantDto>> response = restaurantService.getAllRestaurants(pageable);
+        RestaurantResponse<PaginationResponse<RestaurantDto>> result = restaurantService.getAllRestaurants(pageable);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(response);
+                .body(result);
     }
 
     @GetMapping("${end.point.search}")
@@ -122,12 +122,13 @@ public class RestaurantsController {
     ){
         Pageable pageable = PageRequest.of(page, limit);
 
-        RestaurantResponse<PaginationResponse<RestaurantDto>> response = restaurantService.searchRestaurants(request, pageable);
+        RestaurantResponse<PaginationResponse<RestaurantDto>> result = restaurantService.searchRestaurants(request, pageable);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(response);
+                .body(result);
     }
 
+    /** Контроллеры для сервиса бронирования**/
     @GetMapping("/check/{restaurantId}/{userId}/{numberOfTable}")
     public ResponseEntity<RestaurantCheckResponse> existRestaurantByIdAndCheckOwner(
             @PathVariable (name = "restaurantId") Integer restaurantId,
@@ -135,6 +136,16 @@ public class RestaurantsController {
             @PathVariable (name = "numberOfTable") Integer numberOfTable
     ){
         RestaurantCheckResponse result = restaurantService.existRestaurantByIdAndCheckOwner(restaurantId, userId, numberOfTable);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(result);
+    }
+
+    @GetMapping("/checkOwner/{ownerId}")
+    ResponseEntity<Integer> checkIsOwner(
+            @PathVariable (name = "ownerId") Integer ownerId
+    ){
+        Integer result = restaurantService.checkIsOwner(ownerId);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(result);

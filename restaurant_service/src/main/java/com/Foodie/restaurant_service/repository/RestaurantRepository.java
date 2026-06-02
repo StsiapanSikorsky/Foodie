@@ -15,4 +15,5 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
 
     boolean existsByRestaurantName(String restaurantName);
 
+    Optional<Restaurant> findByOwnerId(Integer ownerId);
 }

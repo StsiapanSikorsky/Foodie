@@ -12,8 +12,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 @Mapper(
         componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        imports = {DateTimeUtils.class, Object.class}
-)public interface BookingMapper {
+        imports = {DateTimeUtils.class, Object.class})
+public interface BookingMapper {
 
 
     @Mapping(target = "id", ignore = true)

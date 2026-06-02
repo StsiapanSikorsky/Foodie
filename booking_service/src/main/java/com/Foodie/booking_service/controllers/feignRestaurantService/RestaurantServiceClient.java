@@ -15,4 +15,9 @@ public interface RestaurantServiceClient {
         @PathVariable ("userId") Integer userId,
         @PathVariable ("numberOfTable") Integer numberOfTable
     );
+
+    @GetMapping("/restaurant/checkOwner/{ownerId}")
+    Integer checkIsOwner(
+            @PathVariable ("ownerId") Integer userId
+    );
 }
