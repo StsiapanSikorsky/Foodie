@@ -27,9 +27,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -41,8 +44,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final AuthenticationUtils authenticationUtils;
 
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    //TODO:Добавить в эндпоинты поиск бронирований без статуса CANCELED
 
     @Override
     public BookingResponse<BookingDto> createBooking(
@@ -82,9 +86,16 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse<BookingDto> getBookingById(
             @NotNull Long bookingId
     ) {
+        String bookingDtoFromCache = redisTemplate.opsForValue().get("booking:" + bookingId);
+        if (bookingDtoFromCache != null) {
+            BookingDto bookingDto = objectMapper.readValue(bookingDtoFromCache, BookingDto.class);
+            return BookingResponse.createSuccessful(bookingDto);
+        }
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
 
+        redisTemplate.opsForValue().set("booking:" + bookingId, objectMapper.writeValueAsString(bookingMapper.toBookingDto(booking)), 5, TimeUnit.MINUTES);
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(booking));
     }
 
@@ -188,6 +199,8 @@ public class BookingServiceImpl implements BookingService {
         updatedBooking.setUpdatedAt(LocalDateTime.now());
         bookingRepository.save(updatedBooking);
 
+        redisTemplate.delete("booking:" + bookingId);
+
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(updatedBooking));
     }
 
@@ -209,6 +222,8 @@ public class BookingServiceImpl implements BookingService {
             booking.setStatus(BookingStatus.CANCELED);
             booking.setUpdatedAt(LocalDateTime.now());
             bookingRepository.save(booking);
+
+            redisTemplate.delete("booking:" + bookingId);
         }
         else {
             throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
