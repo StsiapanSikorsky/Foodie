@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Validated
 @RequiredArgsConstructor
-@RequestMapping("/booking-integration")
+@RequestMapping("${end.point.booking-integration}")
 public class BookingIntegrationController {
 
     private final BookingIntegrationService bookingIntegrationService;
 
-    @GetMapping("/check/{restaurantId}/{userId}/{numberOfTable}")
+    @GetMapping("${end.point.check.restaurantId.userId.numberOfTable}")
     public ResponseEntity<RestaurantCheckResponse> existRestaurantByIdAndCheckOwner(
             @PathVariable(name = "restaurantId") Integer restaurantId,
             @PathVariable (name = "userId") Integer userId,
@@ -31,7 +31,7 @@ public class BookingIntegrationController {
                 .body(result);
     }
 
-    @GetMapping("/getRestaurantId/{ownerId}")
+    @GetMapping("${end.point.getRestaurantId.ownerId}")
     public ResponseEntity<Integer> getRestaurantIdWhenUserIsOwner(
             @PathVariable (name = "ownerId") Integer ownerId
     ){
@@ -41,7 +41,7 @@ public class BookingIntegrationController {
                 .body(result);
     }
 
-    @GetMapping("/check")
+    @GetMapping("${end.point.check}")
     public ResponseEntity<Boolean> isOwner(
             @RequestParam(name = "restaurantId") Integer restaurantId,
             @RequestParam (name = "userId") Integer userId

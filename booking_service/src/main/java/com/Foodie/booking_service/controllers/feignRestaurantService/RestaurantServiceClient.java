@@ -10,19 +10,19 @@ import org.springframework.web.bind.annotation.RequestParam;
             url = "${restaurant.service.url:http://localhost:8198}")
 public interface RestaurantServiceClient {
 
-    @GetMapping("/booking-integration/check/{restaurantId}/{userId}/{numberOfTable}")
+    @GetMapping("${end.point.booking-integration.check.restaurantId.userId.numberOfTable}")
     RestaurantCheckResponse getRestaurantIdAndCheckOwner(
         @PathVariable ("restaurantId") Integer restaurantId,
         @PathVariable ("userId") Integer userId,
         @PathVariable ("numberOfTable") Integer numberOfTable
     );
 
-    @GetMapping("/booking-integration/getRestaurantId/{ownerId}")
+    @GetMapping("${end.point.booking-integration.getRestaurantId.ownerId}")
     Integer getRestaurantIdWhenUserIsOwner(
             @PathVariable ("ownerId") Integer userId
     );
 
-    @GetMapping("/booking-integration/check")
+    @GetMapping("${end.point.booking-integration.check}")
     Boolean checkRestaurantOwner(
             @RequestParam (name = "restaurantId") Integer restaurantId,
             @RequestParam (name = "userId") Integer userId
