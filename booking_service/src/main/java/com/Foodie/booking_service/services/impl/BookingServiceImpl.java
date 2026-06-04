@@ -29,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
@@ -86,9 +87,9 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse<BookingDto> getBookingById(
             @NotNull Long bookingId
     ) {
-        String bookingDtoFromCache = redisTemplate.opsForValue().get("booking:" + bookingId);
-        if (bookingDtoFromCache != null) {
-            BookingDto bookingDto = objectMapper.readValue(bookingDtoFromCache, BookingDto.class);
+        String cachedKey = redisTemplate.opsForValue().get("booking:" + bookingId);
+        if (cachedKey != null) {
+            BookingDto bookingDto = objectMapper.readValue(cachedKey, BookingDto.class);
             return BookingResponse.createSuccessful(bookingDto);
         }
 
@@ -111,6 +112,17 @@ public class BookingServiceImpl implements BookingService {
         if(!validationResponse.getRoles().contains(UserRole.USER.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
 
+        String cachedKey = buildBookingCacheKey(validationResponse.getUserId(), pageable);
+        String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
+
+        if(cachedPaginationBookingDto != null){
+            PaginationResponse<BookingDto> paginationResponseFromCache = objectMapper.readValue(
+                    cachedPaginationBookingDto,
+                    new TypeReference<PaginationResponse<BookingDto>>() {}
+            );
+            return BookingResponse.createSuccessful(paginationResponseFromCache);
+        }
+
         Page<BookingDto> bookings = bookingRepository.findAllByUserId(validationResponse.getUserId(), pageable)
                 .map(bookingMapper::toBookingDto);
 
@@ -124,6 +136,9 @@ public class BookingServiceImpl implements BookingService {
                 )
         );
 
+        String cacheResult = objectMapper.writeValueAsString(result);
+        redisTemplate.opsForValue().set(cachedKey, cacheResult, 5, TimeUnit.MINUTES);
+
         return BookingResponse.createSuccessful(result);
     }
 
@@ -136,8 +151,19 @@ public class BookingServiceImpl implements BookingService {
     ) {
         AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
 
-        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()) || validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
+        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()) && !validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
+
+        String cachedKey = buildBookingCacheKey(validationResponse.getUserId(), pageable);
+        String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
+
+        if(cachedPaginationBookingDto != null){
+            PaginationResponse<BookingDto> paginationResponseFromCache = objectMapper.readValue(
+                    cachedPaginationBookingDto,
+                    new TypeReference<PaginationResponse<BookingDto>>() {}
+            );
+            return BookingResponse.createSuccessful(paginationResponseFromCache);
+        }
 
         Integer restaurantId = restaurantServiceClient.getRestaurantIdWhenUserIsOwner(validationResponse.getUserId());
 
@@ -153,6 +179,9 @@ public class BookingServiceImpl implements BookingService {
                         bookings.getTotalPages()
                 )
         );
+
+        String cacheResult = objectMapper.writeValueAsString(result);
+        redisTemplate.opsForValue().set(cachedKey, cacheResult, 5, TimeUnit.MINUTES);
 
         return BookingResponse.createSuccessful(result);
     }
@@ -179,7 +208,7 @@ public class BookingServiceImpl implements BookingService {
 
             if(booking.getUserId().equals(validationResponse.getUserId()))
                 if(!checkRestaurantAndRoleRequest.isOwner())
-                    throw new IncorrectRoleException("");
+                    throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
 
             if(updateBookingRequest.getGuests() > checkRestaurantAndRoleRequest.getGuests())
                 throw new BookingConflictException(ErrorMessage.GUESTS_CONFLICT.getMessage(checkRestaurantAndRoleRequest.getGuests()));
@@ -228,5 +257,12 @@ public class BookingServiceImpl implements BookingService {
         else {
             throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
         }
+    }
+
+    private String buildBookingCacheKey(Integer userId, Pageable pageable){
+        return String.format("user:bookings:%d:page:%d:size:%d",
+                userId,
+                pageable.getPageNumber(),
+                pageable.getPageSize());
     }
 }
