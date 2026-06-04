@@ -7,6 +7,7 @@ import com.Foodie.booking_service.controllers.feignRestaurantService.RestaurantS
 import com.Foodie.booking_service.dto.BookingDto;
 import com.Foodie.booking_service.entity.Booking;
 import com.Foodie.booking_service.enums.BookingStatus;
+import com.Foodie.booking_service.enums.CacheKeyPrefix;
 import com.Foodie.booking_service.enums.UserRole;
 import com.Foodie.booking_service.mapper.BookingMapper;
 import com.Foodie.booking_service.repository.BookingRepository;
@@ -57,7 +58,10 @@ public class BookingServiceImpl implements BookingService {
             @NotNull String refreshToken,
             HttpServletResponse response
     ) {
-        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(
+                jwtToken,
+                refreshToken,
+                response);
 
         try {
             RestaurantCheckResponse checkRestaurantAndRoleRequest = restaurantServiceClient.getRestaurantIdAndCheckOwner(
@@ -73,10 +77,17 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException(e.contentUTF8());
         }
 
-        if(bookingRepository.existsConflictingBooking(restaurantId, bookingRequest.getTableNumber(), bookingRequest.getBookingFrom(), bookingRequest.getBookingTo()))
+        if(bookingRepository.existsConflictingBooking(
+                restaurantId,
+                bookingRequest.getTableNumber(),
+                bookingRequest.getBookingFrom(),
+                bookingRequest.getBookingTo()))
             throw new BookingConflictException(ErrorMessage.BOOKING_CONFLICT.getMessage());
 
-        Booking newBooking = bookingMapper.bookingRequestToBooking(restaurantId, validationResponse.getUserId(), bookingRequest);
+        Booking newBooking = bookingMapper.bookingRequestToBooking(
+                restaurantId,
+                validationResponse.getUserId(),
+                bookingRequest);
         newBooking.setStatus(BookingStatus.CREATED);
         bookingRepository.save(newBooking);
 
@@ -87,7 +98,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse<BookingDto> getBookingById(
             @NotNull Long bookingId
     ) {
-        String cachedKey = redisTemplate.opsForValue().get("booking:" + bookingId);
+        String cachedKey = redisTemplate.opsForValue().get(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
         if (cachedKey != null) {
             BookingDto bookingDto = objectMapper.readValue(cachedKey, BookingDto.class);
             return BookingResponse.createSuccessful(bookingDto);
@@ -96,7 +107,12 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
 
-        redisTemplate.opsForValue().set("booking:" + bookingId, objectMapper.writeValueAsString(bookingMapper.toBookingDto(booking)), 5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(
+                CacheKeyPrefix.BOOKING.getPrefix() + bookingId,
+                objectMapper.writeValueAsString(bookingMapper.toBookingDto(booking)),
+                5,
+                TimeUnit.MINUTES);
+
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(booking));
     }
 
@@ -107,25 +123,26 @@ public class BookingServiceImpl implements BookingService {
             @NotNull String refreshToken,
             HttpServletResponse response
     ) {
-        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(
+                jwtToken,
+                refreshToken,
+                response);
 
         if(!validationResponse.getRoles().contains(UserRole.USER.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
 
         String cachedKey = buildBookingCacheKey(validationResponse.getUserId(), pageable);
         String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
-
         if(cachedPaginationBookingDto != null){
-            PaginationResponse<BookingDto> paginationResponseFromCache = objectMapper.readValue(
+            PaginationResponse<BookingDto> resultFromCache = objectMapper.readValue(
                     cachedPaginationBookingDto,
                     new TypeReference<PaginationResponse<BookingDto>>() {}
             );
-            return BookingResponse.createSuccessful(paginationResponseFromCache);
+            return BookingResponse.createSuccessful(resultFromCache);
         }
 
         Page<BookingDto> bookings = bookingRepository.findAllByUserId(validationResponse.getUserId(), pageable)
                 .map(bookingMapper::toBookingDto);
-
         PaginationResponse<BookingDto> result = new PaginationResponse<>(
                 bookings.getContent(),
                 new PaginationResponse.Pagination(
@@ -137,7 +154,11 @@ public class BookingServiceImpl implements BookingService {
         );
 
         String cacheResult = objectMapper.writeValueAsString(result);
-        redisTemplate.opsForValue().set(cachedKey, cacheResult, 5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(
+                cachedKey,
+                cacheResult,
+                5,
+                TimeUnit.MINUTES);
 
         return BookingResponse.createSuccessful(result);
     }
@@ -149,27 +170,28 @@ public class BookingServiceImpl implements BookingService {
             @NotNull String refreshToken,
             HttpServletResponse response
     ) {
-        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(
+                jwtToken,
+                refreshToken,
+                response);
 
-        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole()) && !validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
+        if(!validationResponse.getRoles().contains(UserRole.OWNER.getRole())
+                && !validationResponse.getRoles().contains(UserRole.ADMIN.getRole()))
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
 
         String cachedKey = buildBookingCacheKey(validationResponse.getUserId(), pageable);
         String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
-
         if(cachedPaginationBookingDto != null){
-            PaginationResponse<BookingDto> paginationResponseFromCache = objectMapper.readValue(
+            PaginationResponse<BookingDto> resultFromCache = objectMapper.readValue(
                     cachedPaginationBookingDto,
                     new TypeReference<PaginationResponse<BookingDto>>() {}
             );
-            return BookingResponse.createSuccessful(paginationResponseFromCache);
+            return BookingResponse.createSuccessful(resultFromCache);
         }
 
         Integer restaurantId = restaurantServiceClient.getRestaurantIdWhenUserIsOwner(validationResponse.getUserId());
-
         Page<BookingDto> bookings = bookingRepository.findAllByRestaurantId(restaurantId, pageable)
                 .map(bookingMapper::toBookingDto);
-
         PaginationResponse<BookingDto> result = new PaginationResponse<>(
                 bookings.getContent(),
                 new PaginationResponse.Pagination(
@@ -181,7 +203,11 @@ public class BookingServiceImpl implements BookingService {
         );
 
         String cacheResult = objectMapper.writeValueAsString(result);
-        redisTemplate.opsForValue().set(cachedKey, cacheResult, 5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(
+                cachedKey,
+                cacheResult,
+                5,
+                TimeUnit.MINUTES);
 
         return BookingResponse.createSuccessful(result);
     }
@@ -194,7 +220,10 @@ public class BookingServiceImpl implements BookingService {
             @NotNull String refreshToken,
             HttpServletResponse response
     ) {
-        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(
+                jwtToken,
+                refreshToken,
+                response);
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
@@ -206,8 +235,8 @@ public class BookingServiceImpl implements BookingService {
                     updateBookingRequest.getTableNumber()
             );
 
-            if(booking.getUserId().equals(validationResponse.getUserId()))
-                if(!checkRestaurantAndRoleRequest.isOwner())
+            if(booking.getUserId().equals(validationResponse.getUserId())
+                    && !checkRestaurantAndRoleRequest.isOwner())
                     throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
 
             if(updateBookingRequest.getGuests() > checkRestaurantAndRoleRequest.getGuests())
@@ -228,7 +257,7 @@ public class BookingServiceImpl implements BookingService {
         updatedBooking.setUpdatedAt(LocalDateTime.now());
         bookingRepository.save(updatedBooking);
 
-        redisTemplate.delete("booking:" + bookingId);
+        redisTemplate.delete(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
 
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(updatedBooking));
     }
@@ -240,7 +269,10 @@ public class BookingServiceImpl implements BookingService {
             @NotNull String refreshToken,
             HttpServletResponse response
     ) {
-        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(jwtToken, refreshToken, response);
+        AuthenticationValidationResponse validationResponse = authenticationUtils.checkValidTokens(
+                jwtToken,
+                refreshToken,
+                response);
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId)));
@@ -252,15 +284,18 @@ public class BookingServiceImpl implements BookingService {
             booking.setUpdatedAt(LocalDateTime.now());
             bookingRepository.save(booking);
 
-            redisTemplate.delete("booking:" + bookingId);
+            redisTemplate.delete(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
         }
         else {
             throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
         }
     }
 
-    private String buildBookingCacheKey(Integer userId, Pageable pageable){
-        return String.format("user:bookings:%d:page:%d:size:%d",
+    private String buildBookingCacheKey(
+            Integer userId,
+            Pageable pageable
+    ){
+        return String.format(CacheKeyPrefix.BOOKING_WITH_PAGINATION.getPrefix(),
                 userId,
                 pageable.getPageNumber(),
                 pageable.getPageSize());

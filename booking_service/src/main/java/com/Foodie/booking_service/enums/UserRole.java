@@ -11,8 +11,4 @@ public enum UserRole {
     ADMIN("ADMIN");
 
     private final String role;
-
-    public static UserRole fromName(String name){
-        return UserRole.valueOf(name.toUpperCase());
-    }
 }
