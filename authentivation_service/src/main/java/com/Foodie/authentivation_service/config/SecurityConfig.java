@@ -75,6 +75,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "//webjars/**").permitAll()
 
+                        .requestMatchers("/actuator/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())
                         .requestMatchers(HttpMethod.PUT, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())
                         .requestMatchers(HttpMethod.DELETE, "/user/{id}").hasAnyAuthority(userAccessSecurityRole())

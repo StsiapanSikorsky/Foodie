@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'authentication-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8197']
+        labels:
+          service: 'authentication'
+          environment: 'dev'
+
+  - job_name: 'restaurant-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8198']
+        labels:
+          service: 'restaurant'
+          environment: 'dev'
+
+  - job_name: 'booking-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8199']
+        labels:
+          service: 'booking'
+          environment: 'dev'
