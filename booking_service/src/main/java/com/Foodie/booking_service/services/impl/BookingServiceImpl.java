@@ -70,6 +70,9 @@ public class BookingServiceImpl implements BookingService {
                     bookingRequest.getTableNumber()
             );
 
+            if(!checkRestaurantAndRoleRequest.isOwner())
+                throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
+
             if(bookingRequest.getGuests() > checkRestaurantAndRoleRequest.getGuests())
                 throw new BookingConflictException(ErrorMessage.GUESTS_CONFLICT.getMessage(checkRestaurantAndRoleRequest.getGuests()));
         }
@@ -98,9 +101,9 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse<BookingDto> getBookingById(
             @NotNull Long bookingId
     ) {
-        String cachedKey = redisTemplate.opsForValue().get(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
-        if (cachedKey != null) {
-            BookingDto bookingDto = objectMapper.readValue(cachedKey, BookingDto.class);
+        String cachedValue = redisTemplate.opsForValue().get(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
+        if (cachedValue != null) {
+            BookingDto bookingDto = objectMapper.readValue(cachedValue, BookingDto.class);
             return BookingResponse.createSuccessful(bookingDto);
         }
 
