@@ -8,7 +8,7 @@ import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
 import com.Foodie.restaurant_service.mapper.RestaurantMapper;
 import com.Foodie.restaurant_service.repository.RestaurantRepository;
-import com.Foodie.restaurant_service.request.RestaurantRequest;
+import com.Foodie.restaurant_service.request.restaurants.RestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest;
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import com.Foodie.restaurant_service.responce.PaginationResponse;

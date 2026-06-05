@@ -15,7 +15,6 @@ import com.Foodie.booking_service.response.BookingResponse;
 import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.response.authentication.AuthenticationValidationResponse;
 import com.Foodie.booking_service.response.restaurant.RestaurantCheckResponse;
-import com.Foodie.booking_service.services.BookingService;
 import com.Foodie.booking_service.services.impl.BookingServiceImpl;
 import com.Foodie.booking_service.utils.AuthenticationUtils;
 import feign.FeignException;
