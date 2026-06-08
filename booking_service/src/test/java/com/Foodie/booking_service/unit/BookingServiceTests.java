@@ -56,7 +56,6 @@ public class BookingServiceTests {
     @Mock
     private RestaurantServiceClient restaurantServiceClient;
 
-    @Autowired
     @Mock
     private BookingMapper bookingMapper;
 
@@ -66,7 +65,6 @@ public class BookingServiceTests {
     @Mock
     private RedisTemplate<String, String> redisTemplate;
 
-    @Autowired
     @Mock
     private ObjectMapper objectMapper;
 
