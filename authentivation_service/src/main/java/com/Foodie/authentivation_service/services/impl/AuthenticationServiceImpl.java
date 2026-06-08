@@ -54,11 +54,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public AuthenticationResponse<UserProfileDto> registerUser(
             @Valid @NotNull RegistrationRequest request
     ) {
-
-        //TODO:Добавить валидацию пароля
-
         Role userRole = roleRepository.findByName(UserRole.USER.getRole())
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage()));
+
+        if(userRepository.existsByEmail(request.getEmail()))
+            throw new InvalidDataException(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
 
         User newUser = userMapper.registrationRequestToUser(request);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -111,6 +111,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     ) {
         Role role = roleRepository.findByName(UserRole.OWNER.getRole())
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage()));
+
+        if(userRepository.existsByEmail(request.getEmail()))
+            throw new InvalidDataException(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
 
         User newOwner = userMapper.registrationRequestToUser(request);
         newOwner.setPassword(passwordEncoder.encode(request.getPassword()));
