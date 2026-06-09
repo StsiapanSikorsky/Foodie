@@ -21,6 +21,7 @@ public enum ErrorMessage {
     ERROR_DURING_JWT_PROCESSING("An unexpected error occurred during JWT processing"),
     UNEXPECTED_ERROR_OCCURRED("An unexpected error occured. Please try again later"),
     INVALID_TOKEN_SIGNATURE("INVALID_TOKEN_SIGNATURE"),
+    INVALID_REFRESH_TOKEN("Invalid refresh token"),
 
     UNDEFINED("Undefined");
 

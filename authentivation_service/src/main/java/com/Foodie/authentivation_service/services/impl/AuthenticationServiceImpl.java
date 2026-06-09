@@ -166,32 +166,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     ) {
         String email = jwtTokenService.getEmail(token);
 
-        if (email == null || !jwtTokenService.validateToken(token)) {
-            return new TokenValidationResponse(
-                    false,
-                    null,
-                    null,
-                    null);
-        }
+        if (email == null || !jwtTokenService.validateToken(token))
+            return new TokenValidationResponse(false,null, null, null);
 
         User user = userRepository.findUserByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(email)));
         List<String> roles = jwtTokenService.getRoles(token);
 
-        if (user == null) {
-            return new TokenValidationResponse(
-                    false,
-                    null,
-                    null,
-                    null);
-        }
-
-        return new TokenValidationResponse(
-                true,
-                user.getId(),
-                user.getEmail(),
-                roles
-        );
+        return new TokenValidationResponse(true, user.getId(), user.getEmail(), roles);
     }
 
     @Override
@@ -199,12 +181,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             @NotNull String refreshTokenValue
     ) {
         RefreshToken refreshToken = refreshTokenService.validateAndRefreshRefreshToken(refreshTokenValue);
-        User user = refreshToken.getUser();
 
+        if (refreshToken == null || refreshToken.getUser() == null) {
+            throw new InvalidDataException(ErrorMessage.INVALID_REFRESH_TOKEN.getMessage());
+        }
+
+        User user = refreshToken.getUser();
         String jwtToken = jwtTokenService.generateToken(user);
 
-        AuthenticationRefreshResponse response = new AuthenticationRefreshResponse(jwtToken, refreshToken.getRefreshToken());
-
-        return response;
+        return new AuthenticationRefreshResponse(jwtToken, refreshToken.getRefreshToken());
     }
 }

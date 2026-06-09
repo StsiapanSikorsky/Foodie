@@ -12,7 +12,9 @@ import com.Foodie.authentivation_service.repository.RoleRepository;
 import com.Foodie.authentivation_service.repository.UserRepository;
 import com.Foodie.authentivation_service.requests.authentication.LoginRequest;
 import com.Foodie.authentivation_service.requests.authentication.RegistrationRequest;
+import com.Foodie.authentivation_service.responce.authentication.AuthenticationRefreshResponse;
 import com.Foodie.authentivation_service.responce.authentication.AuthenticationResponse;
+import com.Foodie.authentivation_service.responce.authentication.TokenValidationResponse;
 import com.Foodie.authentivation_service.security.JwtTokenService;
 import com.Foodie.authentivation_service.services.RefreshTokenService;
 import com.Foodie.authentivation_service.services.impl.AuthenticationServiceImpl;
@@ -34,8 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -89,9 +90,7 @@ public class AuthenticationServiceTests {
     void setUp(){
         jwtToken = "Bearer test.jwt.token";
         refreshToken = "tets.refresh.token";
-        refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setId(1);
-        refreshTokenEntity.setRefreshToken(refreshToken);
+
 
         ecodedPassword = "encode";
 
@@ -116,6 +115,11 @@ public class AuthenticationServiceTests {
         owner.setEmail("test@gmail.com");
         owner.setPassword("pass123");
         owner.setRoles(ownerRoles);
+
+        refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setId(1);
+        refreshTokenEntity.setUser(user);
+        refreshTokenEntity.setRefreshToken(refreshToken);
 
         registrationRequest = new RegistrationRequest();
         registrationRequest.setEmail("test@gmail.com");
@@ -374,5 +378,59 @@ public class AuthenticationServiceTests {
         verify(jwtTokenService, never()).generateToken(owner);
         verify(refreshTokenService, never()).generateOrUpdateRefreshToken(owner);
         verify(userMapper, never()).userToUserProfileDto(owner, jwtToken, refreshToken);
+    }
+
+    @Test
+    void validateToken_Success_ShouldReturnValidResponse() {
+        when(jwtTokenService.getEmail(jwtToken)).thenReturn("email");
+        when(jwtTokenService.validateToken(jwtToken)).thenReturn(true);
+        when(userRepository.findUserByEmail("email")).thenReturn(Optional.of(user));
+
+        TokenValidationResponse response = authenticationService.validateToken(jwtToken);
+
+        assertNotNull(response);
+        assertTrue(response.isValid());
+        assertEquals(user.getId(), response.getUserId());
+        assertEquals(user.getEmail(), response.getEmail());
+
+        verify(jwtTokenService, times(1)).getEmail(jwtToken);
+        verify(jwtTokenService, times(1)).validateToken(jwtToken);
+        verify(userRepository, times(1)).findUserByEmail("email");
+        verify(jwtTokenService, times(1)).getRoles(jwtToken);
+    }
+
+    @Test
+    void validateToken_EmptyEmail_() {
+        when(jwtTokenService.getEmail(jwtToken)).thenReturn(null);
+
+        TokenValidationResponse response = authenticationService.validateToken(jwtToken);
+
+        assertNotNull(response);
+        assertFalse(response.isValid());
+        assertNull(response.getUserId());
+        assertNull(response.getEmail());
+
+        verify(jwtTokenService, times(1)).getEmail(jwtToken);
+        verify(jwtTokenService, never()).validateToken(jwtToken);
+        verify(userRepository, never()).findUserByEmail("email");
+        verify(jwtTokenService, never()).getRoles(jwtToken);
+    }
+
+
+    @Test
+    void refreshAccessToken_Success(){
+        String newJwtToken = "Bearer new.jwt.token";
+
+        when(refreshTokenService.validateAndRefreshRefreshToken(refreshToken)).thenReturn(refreshTokenEntity);
+        when(jwtTokenService.generateToken(user)).thenReturn(newJwtToken);
+
+        AuthenticationRefreshResponse result = authenticationService.refreshAccessToken(refreshToken);
+
+        assertNotNull(result);
+        assertNotNull(result.getToken());
+        assertEquals(newJwtToken, result.getToken());
+
+        verify(refreshTokenService, times(1)).validateAndRefreshRefreshToken(refreshToken);
+        verify(jwtTokenService, times(1)).generateToken(user);
     }
 }
