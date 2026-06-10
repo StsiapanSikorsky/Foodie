@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
 
-
-    //TODO: Учитывать проверку статусов
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
             "WHERE b.restaurantId = :restaurantId " +
             "AND b.tableNumber = :tableNumber " +
