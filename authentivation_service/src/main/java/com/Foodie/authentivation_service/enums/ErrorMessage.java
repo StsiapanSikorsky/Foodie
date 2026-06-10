@@ -22,6 +22,7 @@ public enum ErrorMessage {
     UNEXPECTED_ERROR_OCCURRED("An unexpected error occured. Please try again later"),
     INVALID_TOKEN_SIGNATURE("INVALID_TOKEN_SIGNATURE"),
     INVALID_REFRESH_TOKEN("Invalid refresh token"),
+    REFRESH_TOKEN_HAS_EXPIRED("Refresh token has expired"),
 
     UNDEFINED("Undefined");
 

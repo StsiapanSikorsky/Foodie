@@ -47,13 +47,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshToken validateAndRefreshRefreshToken(
             String requestRefreshToken
     ) {
-        System.out.println("Вызов метода сервиса токена");
-
         RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(requestRefreshToken)
                 .orElseThrow(() -> new NotFoundException(ErrorMessage.NOT_FOUND_REFRESH_TOKEN.getMessage()));
 
         if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Refresh token has expired");
+            throw new InvalidDataException(ErrorMessage.REFRESH_TOKEN_HAS_EXPIRED.getMessage());
         }
 
         refreshToken.setCreated(LocalDateTime.now());
