@@ -23,9 +23,10 @@ public class AccessValidator {
     ){
         Integer currentUserId = getUserIdFromAuthentication();
 
-        if(!currentUserId.equals(ownerId) && !isAdminOrSuperAdmin(currentUserId)){
+        if(!currentUserId.equals(ownerId)
+                && !isAdminOrSuperAdmin(currentUserId))
             throw new AccessDeniedException(ErrorMessage.HAVE_NO_ACCESS.getMessage());
-        }
+
     }
 
     public Integer getUserIdFromAuthentication(){

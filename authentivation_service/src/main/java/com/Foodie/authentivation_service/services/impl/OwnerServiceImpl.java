@@ -5,6 +5,7 @@ import com.Foodie.authentivation_service.advice.exception.NotFoundException;
 import com.Foodie.authentivation_service.dto.UserDto;
 import com.Foodie.authentivation_service.entity.User;
 import com.Foodie.authentivation_service.enums.ErrorMessage;
+import com.Foodie.authentivation_service.enums.UserRole;
 import com.Foodie.authentivation_service.mapper.UserMapper;
 import com.Foodie.authentivation_service.repository.UserRepository;
 import com.Foodie.authentivation_service.requests.owner.UpdateOwnerRequest;

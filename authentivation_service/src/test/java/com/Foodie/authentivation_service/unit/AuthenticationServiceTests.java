@@ -79,7 +79,6 @@ public class AuthenticationServiceTests {
     private RegistrationRequest registrationRequest;
     private LoginRequest loginRequest;
 
-
     private String jwtToken;
     private String refreshToken;
     private RefreshToken refreshTokenEntity;
@@ -90,7 +89,6 @@ public class AuthenticationServiceTests {
     void setUp(){
         jwtToken = "Bearer test.jwt.token";
         refreshToken = "tets.refresh.token";
-
 
         ecodedPassword = "encode";
 

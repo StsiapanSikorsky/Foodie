@@ -238,7 +238,7 @@ public class BookingServiceImpl implements BookingService {
                     updateBookingRequest.getTableNumber()
             );
 
-            if(booking.getUserId().equals(validationResponse.getUserId())
+            if(!booking.getUserId().equals(validationResponse.getUserId())
                     && !checkRestaurantAndRoleRequest.isOwner())
                     throw new IncorrectRoleException(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
 
