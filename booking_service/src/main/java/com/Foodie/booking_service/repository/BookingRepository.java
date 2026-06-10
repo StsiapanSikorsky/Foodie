@@ -19,6 +19,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
             "WHERE b.restaurantId = :restaurantId " +
             "AND b.tableNumber = :tableNumber " +
+            "AND b.status != 'CANCELED' " +
             "AND ((b.bookingFrom < :to AND b.bookingTo > :from))")
     boolean existsConflictingBooking(
             @Param ("restaurantId") Integer restaurantId,
@@ -26,6 +27,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
             );
+
+    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+            "WHERE b.restaurantId = :restaurantId " +
+            "AND b.tableNumber = :tableNumber " +
+            "AND b.id != :excludeId " +
+            "AND b.status != 'CANCELED' " +
+            "AND b.bookingFrom < :to " +
+            "AND b.bookingTo > :from")
+    boolean existsConflictingBookingExcludingId(
+            @Param("restaurantId") Integer restaurantId,
+            @Param("tableNumber") Integer tableNumber,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("excludeId") Long excludeId
+    );
 
     Page<Booking> findAllByRestaurantId(Integer restaurantId, Pageable pageable);
 

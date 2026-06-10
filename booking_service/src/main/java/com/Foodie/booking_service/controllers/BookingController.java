@@ -8,6 +8,8 @@ import com.Foodie.booking_service.response.BookingResponse;
 import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.services.BookingService;
 import com.Foodie.booking_service.utils.AuthenticationUtils;
+import com.Foodie.booking_service.utils.LogMessage;
+import com.Foodie.booking_service.utils.Utils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @Slf4j
@@ -35,6 +39,8 @@ public class BookingController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         BookingResponse<BookingDto> result = bookingService.createBooking(
@@ -53,6 +59,8 @@ public class BookingController {
     public ResponseEntity<BookingResponse<BookingDto>> getBookingById(
             @PathVariable (name = "bookingId") Long bookingId
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         BookingResponse<BookingDto> result = bookingService.getBookingById(bookingId);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -67,6 +75,8 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         Pageable pageable = PageRequest.of(page, limit);
@@ -89,6 +99,8 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         Pageable pageable = PageRequest.of(page, limit);
@@ -111,6 +123,8 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         BookingResponse<BookingDto> result = bookingService.updateBooking(
@@ -132,6 +146,8 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
         bookingService.softDeleteBooking(
@@ -144,5 +160,4 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.OK)
                 .build();
     }
-
 }

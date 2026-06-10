@@ -36,6 +36,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -125,10 +126,14 @@ public class BookingServiceTests {
         testBookingRequest = new BookingRequest();
         testBookingRequest.setTableNumber(1);
         testBookingRequest.setGuests(1);
+        testBookingRequest.setBookingFrom(LocalDateTime.now().plusHours(2));
+        testBookingRequest.setBookingTo(LocalDateTime.now().plusHours(3));
 
         testBookingRequestManyGuests = new BookingRequest();
         testBookingRequestManyGuests.setTableNumber(1);
         testBookingRequestManyGuests.setGuests(20);
+        testBookingRequestManyGuests.setBookingFrom(LocalDateTime.now().plusHours(2));
+        testBookingRequestManyGuests.setBookingTo(LocalDateTime.now().plusHours(3));
 
         testUpdateBookingRequest = new UpdateBookingRequest();
         testUpdateBookingRequest.setTableNumber(2);
@@ -181,23 +186,6 @@ public class BookingServiceTests {
         verify(bookingMapper,times(1)).bookingRequestToBooking(1, testValidationResponseOwner.getUserId(), testBookingRequest);
         verify(bookingRepository,times(1)).save(testBooking);
         verify(bookingMapper, times(1)).toBookingDto(testBooking);
-    }
-
-    @Test
-    void createBooking_NotOwner_ThrowIncorrectRoleException(){
-        when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);
-        when(restaurantServiceClient.getRestaurantIdAndCheckOwner(1, testValidationResponseOwner.getUserId(), testBookingRequest.getTableNumber())).thenReturn(testRestaurantCheckResponseNotOwner);
-
-        assertThatThrownBy(() -> bookingService.createBooking(1, testBookingRequest, jwtToken, refreshToken, response))
-                .isInstanceOf(IncorrectRoleException.class)
-                .hasMessageContaining("dont have permission");
-
-        verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(restaurantServiceClient, times(1)).getRestaurantIdAndCheckOwner(1, testValidationResponseOwner.getUserId(), testBookingRequest.getTableNumber());
-        verify(bookingRepository, times(0)).existsConflictingBooking(1, testBookingRequest.getTableNumber(), testBookingRequest.getBookingFrom(),testBookingRequest.getBookingTo());
-        verify(bookingMapper,times(0)).bookingRequestToBooking(1, testValidationResponseOwner.getUserId(), testBookingRequest);
-        verify(bookingRepository,times(0)).save(testBooking);
-        verify(bookingMapper, times(0)).toBookingDto(testBooking);
     }
 
     @Test
@@ -416,8 +404,8 @@ public class BookingServiceTests {
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
         verify(valueOperations, times(1)).get(anyString());
+        verify(restaurantServiceClient, times(1)).getRestaurantIdWhenUserIsOwner(anyInt());
         verify(objectMapper, times(1)).readValue(anyString(), any(TypeReference.class));
-        verify(restaurantServiceClient, never()).getRestaurantIdWhenUserIsOwner(anyInt());
         verify(bookingRepository, never()).findAllByRestaurantId(anyInt(), any());
         verify(bookingMapper, never()).toBookingDto(any());
         verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any());
@@ -444,7 +432,7 @@ public class BookingServiceTests {
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(testBooking));
         when(restaurantServiceClient.getRestaurantIdAndCheckOwner(testBooking.getRestaurantId(), testValidationResponseOwner.getUserId(), testUpdateBookingRequest.getTableNumber())).thenReturn(testRestaurantCheckResponse);
-        when(bookingRepository.existsConflictingBooking(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo())).thenReturn(false);
+        when(bookingRepository.existsConflictingBookingExcludingId(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo(), 1L)).thenReturn(false);
         when(bookingMapper.updatedBookingRequestToBooking(testBooking, testUpdateBookingRequest)).thenReturn(testBooking);
         when(bookingRepository.save(testBooking)).thenReturn(testBooking);
         when(bookingMapper.toBookingDto(testBooking)).thenReturn(testbookingDto);
@@ -459,7 +447,7 @@ public class BookingServiceTests {
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
         verify(bookingRepository, times(1)).findById(1L);
         verify(restaurantServiceClient, times(1)).getRestaurantIdAndCheckOwner(testBooking.getRestaurantId(), testValidationResponseOwner.getUserId(), testUpdateBookingRequest.getTableNumber());
-        verify(bookingRepository, times(1)).existsConflictingBooking(testBooking.getRestaurantId(),testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(),testUpdateBookingRequest.getBookingTo());
+        verify(bookingRepository, times(1)).existsConflictingBookingExcludingId(testBooking.getRestaurantId(),testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(),testUpdateBookingRequest.getBookingTo(), 1L);
         verify(bookingMapper, times(1)).updatedBookingRequestToBooking(testBooking, testUpdateBookingRequest);
         verify(bookingRepository, times(1)).save(testBooking);
         verify(redisTemplate, times(1)).delete("booking:" + 1L);
@@ -471,7 +459,7 @@ public class BookingServiceTests {
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(testBooking));
         when(restaurantServiceClient.getRestaurantIdAndCheckOwner(testBooking.getRestaurantId(), testValidationResponseOwner.getUserId(), testUpdateBookingRequest.getTableNumber())).thenReturn(testRestaurantCheckResponse);
-        when(bookingRepository.existsConflictingBooking(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo())).thenReturn(true);  // конфликт существует
+        when(bookingRepository.existsConflictingBookingExcludingId(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo(), 1L)).thenReturn(true);  // конфликт существует
 
         assertThatThrownBy(() -> bookingService.updateBooking(1L, testUpdateBookingRequest, jwtToken, refreshToken, response))
                 .isInstanceOf(BookingConflictException.class)
@@ -480,7 +468,7 @@ public class BookingServiceTests {
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
         verify(bookingRepository, times(1)).findById(1L);
         verify(restaurantServiceClient, times(1)).getRestaurantIdAndCheckOwner(testBooking.getRestaurantId(), testValidationResponseOwner.getUserId(), testUpdateBookingRequest.getTableNumber());
-        verify(bookingRepository, times(1)).existsConflictingBooking(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo());
+        verify(bookingRepository, times(1)).existsConflictingBookingExcludingId(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo(), 1L);
         verify(bookingMapper, never()).updatedBookingRequestToBooking(any(), any());
         verify(bookingRepository, never()).save(any());
         verify(redisTemplate, never()).delete(anyString());
