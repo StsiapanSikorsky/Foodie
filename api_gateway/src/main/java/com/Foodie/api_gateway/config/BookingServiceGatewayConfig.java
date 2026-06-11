@@ -6,16 +6,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class RestaurantServiceGatewayConfig {
+public class BookingServiceGatewayConfig {
 
     @Bean
-    public RouteLocator restaurantRouteLocator(RouteLocatorBuilder builder) {
+    public RouteLocator bookingRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("restaurant_service", r -> r
+                .route("booking-service", r -> r
                         .path(
-                                "/restaurant/**"
+                                "/booking/**"
                         )
-                        .uri("http://localhost:8198"))
+                        .uri("http://localhost:8199"))
                 .build();
     }
 }

@@ -25,3 +25,10 @@ CREATE TABLE restaurant_table (
     restaurant_id BIGINT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE ,
     CONSTRAINT unique_restaurant_table_number UNIQUE (restaurant_id, number_of_table)
 );
+
+CREATE INDEX idx_restaurants_id ON restaurants(id);
+CREATE INDEX idx_restaurants_id_deleted ON restaurants(id, deleted);
+CREATE INDEX idx_restaurants_owner_id ON restaurants(owner_id);
+CREATE INDEX idx_restaurant_table_id ON restaurant_table(id);
+CREATE INDEX idx_restaurant_table_number_of_table ON restaurant_table(number_of_table);
+CREATE INDEX idx_restaurant_table_restaurant_id ON restaurant_table(restaurant_id);

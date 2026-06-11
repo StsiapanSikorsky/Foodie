@@ -35,3 +35,9 @@ INSERT INTO roles (id, name) VALUES
                                       (1, 'USER'),
                                       (2, 'OWNER'),
                                       (3, 'ADMIN');
+
+CREATE INDEX idx_users_user_name ON users(user_name);
+CREATE INDEX idx_users_deleted ON users(deleted);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_refresh_token_user_id ON refresh_token(user_id);
