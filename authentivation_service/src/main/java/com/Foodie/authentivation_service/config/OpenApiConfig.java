@@ -21,7 +21,8 @@ import java.util.Objects;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Authentication Service REST API",
-                version = "1.0"
+                version = "1.0",
+                description = "Сервис отвечающий за аутентификацию, авторизацию, выдачу, проверку и обновление токенов"
         ),
         security = { @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
 )
@@ -39,7 +40,7 @@ public class OpenApiConfig {
     @Bean
     public GroupedOpenApi publicApi(){
         return GroupedOpenApi.builder()
-                .group("authentivation_service")
+                .group("authentication_service")
                 .packagesToScan("com.Foodie.authentivation_service")
                 .addOpenApiCustomizer(serverCustomizer())
                 .build();

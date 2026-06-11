@@ -1,4 +1,4 @@
-package com.Foodie.booking_service.utils;
+package com.Foodie.booking_service.enums;
 
 import lombok.RequiredArgsConstructor;
 
@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 public enum LogMessage {
 
     //API logs
-    METHOD_API_CALLED("Called API method: %s"),
+    METHOD_API_CALLED("%s Called API method: %s"),
 
     //Methods logs
     USER_CREATE_NEW_BOOKING("User with id: %s create booking in restaurant with id: %s. Number of table: %s (%s guests)"),

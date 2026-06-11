@@ -1,4 +1,4 @@
-package com.Foodie.restaurant_service.utils;
+package com.Foodie.restaurant_service.enums;
 
 import lombok.RequiredArgsConstructor;
 

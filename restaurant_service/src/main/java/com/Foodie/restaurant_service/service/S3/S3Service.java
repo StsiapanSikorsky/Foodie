@@ -1,6 +1,6 @@
 package com.Foodie.restaurant_service.service.S3;
 
-import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.enums.ErrorMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +42,7 @@ public class S3Service {
             return  String.format("http://localhost:9000/%s/%s", bucketName, key);
         }
         catch (IOException e){
+            log.warn(ErrorMessage.FILED_TO_UPLOAD_FILE.getMessage(e.getMessage()));
             throw new RuntimeException(ErrorMessage.FILED_TO_UPLOAD_FILE.getMessage(e.getMessage()));
         }
     }

@@ -1,9 +1,12 @@
 package com.Foodie.authentivation_service.controllers;
 
 import com.Foodie.authentivation_service.dto.UserDto;
+import com.Foodie.authentivation_service.enums.LogMessage;
+import com.Foodie.authentivation_service.enums.MethodsHTTP;
 import com.Foodie.authentivation_service.requests.owner.UpdateOwnerRequest;
 import com.Foodie.authentivation_service.responce.owner.OwnerResponse;
 import com.Foodie.authentivation_service.services.OwnerService;
+import com.Foodie.authentivation_service.utils.Utils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,6 +33,8 @@ public class OwnerController {
     public ResponseEntity<OwnerResponse<UserDto>> getOwnerById(
             @PathVariable (name = "id") Integer id
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
+
         OwnerResponse<UserDto> response = ownerService.getOwnerById(id);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -45,6 +50,8 @@ public class OwnerController {
             @PathVariable (name = "id") Integer id,
             @RequestBody @Valid UpdateOwnerRequest request
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.PUT, Utils.getMethodName()));
+
         OwnerResponse<UserDto> response = ownerService.updateOwner(id, request);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -59,6 +66,8 @@ public class OwnerController {
     public ResponseEntity<Void> softDeleteOwner(
             @PathVariable (name = "id") Integer id
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.DELETE, Utils.getMethodName()));
+
         ownerService.softDeleteOwner(id);
 
         return ResponseEntity.status(HttpStatus.OK)

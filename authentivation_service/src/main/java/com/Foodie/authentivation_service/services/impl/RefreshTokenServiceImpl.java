@@ -48,9 +48,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             String requestRefreshToken
     ) {
         RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(requestRefreshToken)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.NOT_FOUND_REFRESH_TOKEN.getMessage()));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.NOT_FOUND_REFRESH_TOKEN.getMessage());
+                    return new NotFoundException(ErrorMessage.NOT_FOUND_REFRESH_TOKEN.getMessage());
+                });
 
         if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            log.warn(ErrorMessage.REFRESH_TOKEN_HAS_EXPIRED.getMessage());
             throw new InvalidDataException(ErrorMessage.REFRESH_TOKEN_HAS_EXPIRED.getMessage());
         }
 

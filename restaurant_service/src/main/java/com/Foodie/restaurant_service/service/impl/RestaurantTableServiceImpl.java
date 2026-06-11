@@ -15,7 +15,8 @@ import com.Foodie.restaurant_service.responce.PaginationResponse;
 import com.Foodie.restaurant_service.responce.RestaurantTableResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
 import com.Foodie.restaurant_service.service.RestaurantTableService;
-import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.enums.ErrorMessage;
+import com.Foodie.restaurant_service.enums.LogMessage;
 import com.Foodie.restaurant_service.utils.Utils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -49,21 +50,30 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             @NotNull HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
 
-        if(!utils.isOwnerOrAdmin(restaurant, validationResponse)){
+        if(!utils.isOwnerOrAdmin(restaurant, validationResponse))
+        {
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
-        if(restaurantTableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId, request.getNumberOfTable())){
+        if(restaurantTableRepository.existsByRestaurantIdAndNumberOfTable(restaurantId, request.getNumberOfTable()))
+        {
+            log.warn(ErrorMessage.DUPLICATE_TABLE_EXCEPTION.getMessage(request.getNumberOfTable()));
             throw new DataExistsException(ErrorMessage.DUPLICATE_TABLE_EXCEPTION.getMessage(request.getNumberOfTable()));
         }
 
         RestaurantTable restaurantTable = restaurantTableMapper.tableRequestToRestaurantTable(request, restaurant);
         restaurantTableRepository.save(restaurantTable);
         RestaurantTableDto restaurantTableDto = restaurantTableMapper.toRestaurantTableDto(restaurantTable);
+
+        log.info(LogMessage.TABLE_CREATE_SUCCESS.getMessage(validationResponse.getUserId(), restaurantId, restaurantTableDto.getNumberOfTable()));
         return RestaurantTableResponse.createSuccessful(restaurantTableDto);
     }
 
@@ -73,7 +83,10 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             @NotNull Pageable pageable
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         Page<RestaurantTable> page = restaurantTableRepository.findByRestaurantId(restaurantId, pageable);
 
@@ -100,10 +113,16 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             @NotNull Integer numberOfTable
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         RestaurantTable restaurantTable = restaurantTableRepository.findByRestaurantIdAndNumberOfTable(restaurantId, numberOfTable)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                    return new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                });
 
         RestaurantTableDto restaurantTableDto = restaurantTableMapper.toRestaurantTableDto(restaurantTable);
 
@@ -120,21 +139,29 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
 
         if(!utils.isOwnerOrAdmin(restaurant, validationResponse)){
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
         RestaurantTable restaurantTable = restaurantTableRepository.findByRestaurantIdAndNumberOfTable(restaurantId, numberOfTable)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                    return new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                });
 
         RestaurantTable updatedRestaurantTable = restaurantTableMapper.updatedTableRequestToRestaurantTable(restaurantTable, request);
         restaurantTableRepository.save(updatedRestaurantTable);
         RestaurantTableDto restaurantTableDto = restaurantTableMapper.toRestaurantTableDto(updatedRestaurantTable);
 
+        log.info(LogMessage.TABLE_UPDATE_SUCCESS.getMessage(validationResponse.getUserId(), restaurantId, updatedRestaurantTable.getNumberOfTable()));
         return RestaurantTableResponse.createSuccessful(restaurantTableDto);
     }
 
@@ -147,17 +174,25 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
 
         if(!utils.isOwnerOrAdmin(restaurant, validationResponse)){
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
         RestaurantTable restaurantTable = restaurantTableRepository.findByRestaurantIdAndNumberOfTable(restaurantId, numberOfTable)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                    return new NotFoundException(ErrorMessage.TABLE_NOT_FOUND.getMessage(numberOfTable, restaurantId));
+                });
 
         restaurantTableRepository.delete(restaurantTable);
+        log.info(LogMessage.TABLE_DELETE_SUCCESS.getMessage(validationResponse.getUserId(), restaurantId, numberOfTable));
     }
 }

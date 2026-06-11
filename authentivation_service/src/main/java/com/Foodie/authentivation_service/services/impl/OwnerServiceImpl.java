@@ -5,6 +5,7 @@ import com.Foodie.authentivation_service.advice.exception.NotFoundException;
 import com.Foodie.authentivation_service.dto.UserDto;
 import com.Foodie.authentivation_service.entity.User;
 import com.Foodie.authentivation_service.enums.ErrorMessage;
+import com.Foodie.authentivation_service.enums.LogMessage;
 import com.Foodie.authentivation_service.enums.UserRole;
 import com.Foodie.authentivation_service.mapper.UserMapper;
 import com.Foodie.authentivation_service.repository.UserRepository;
@@ -16,11 +17,13 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OwnerServiceImpl implements OwnerService {
 
@@ -33,7 +36,10 @@ public class OwnerServiceImpl implements OwnerService {
             @NotNull Integer id
     ) {
         User owner = userRepository.getUserByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                    return new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                });
 
         UserDto ownerDto = userMapper.userToUserDto(owner);
         return OwnerResponse.createSuccessful(ownerDto);
@@ -46,12 +52,17 @@ public class OwnerServiceImpl implements OwnerService {
             @Valid UpdateOwnerRequest request
     ) {
         User owner = userRepository.getUserByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                    return new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                });
 
         if(userRepository.existsByUserName(request.getUserName())){
+            log.warn(ErrorMessage.USERNAME_ALREADY_EXISTS.getMessage(request.getUserName()));
             throw new DataExistException(ErrorMessage.USERNAME_ALREADY_EXISTS.getMessage(request.getUserName()));
         }
         if(userRepository.existsByEmail(request.getEmail())){
+            log.warn(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
             throw new DataExistException(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
         }
 
@@ -61,6 +72,7 @@ public class OwnerServiceImpl implements OwnerService {
         updatedOwner.setUpdated(LocalDateTime.now());
         UserDto ownerDto = userMapper.userToUserDto(updatedOwner);
 
+        log.info(LogMessage.OWNER_WAS_UPDATED.getMessage(id));
         return OwnerResponse.createSuccessful(ownerDto);
     }
 
@@ -70,11 +82,15 @@ public class OwnerServiceImpl implements OwnerService {
             @NotNull Integer id
     ) {
         User owner = userRepository.getUserByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                    return new NotFoundException(ErrorMessage.OWNER_NOT_FOUND_BY_ID.getMessage(id));
+                });
 
         accessValidator.validateAdminOrOwnerAccess(id);
 
         owner.setDeleted(true);
         userRepository.save(owner);
+        log.info(LogMessage.OWNER_WAS_DELETED.getMessage(id));
     }
 }

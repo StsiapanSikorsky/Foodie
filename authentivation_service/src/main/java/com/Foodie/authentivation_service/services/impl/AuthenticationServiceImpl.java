@@ -7,6 +7,7 @@ import com.Foodie.authentivation_service.entity.RefreshToken;
 import com.Foodie.authentivation_service.entity.Role;
 import com.Foodie.authentivation_service.entity.User;
 import com.Foodie.authentivation_service.enums.ErrorMessage;
+import com.Foodie.authentivation_service.enums.LogMessage;
 import com.Foodie.authentivation_service.enums.UserRole;
 import com.Foodie.authentivation_service.mapper.UserMapper;
 import com.Foodie.authentivation_service.repository.RoleRepository;
@@ -55,10 +56,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             @Valid @NotNull RegistrationRequest request
     ) {
         Role userRole = roleRepository.findByName(UserRole.USER.getRole())
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.ROLE_NOT_FOUND.getMessage());
+                    return new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage());
+                });
 
         if(userRepository.existsByEmail(request.getEmail()))
+        {
+            log.warn(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
             throw new InvalidDataException(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
+        }
 
         User newUser = userMapper.registrationRequestToUser(request);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -75,6 +82,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         UserProfileDto userProfileDto = userMapper.userToUserProfileDto(newUser, jwtToken, refreshToken.getRefreshToken());
 
+        log.info(LogMessage.REGISTER_USER_SUCCESS.getMessage(userProfileDto.getId()));
         return AuthenticationResponse.createSuccessfulWithNewToken(userProfileDto);
     }
 
@@ -91,17 +99,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             );
         }
         catch (BadCredentialsException e){
+            log.warn(ErrorMessage.INVALID_USER_OR_PASSWORD.getMessage());
             throw new InvalidDataException(ErrorMessage.INVALID_USER_OR_PASSWORD.getMessage());
         }
 
         User user = userRepository.findUserByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail())));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail()));
+                    return new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail()));
+                });
 
         String jwtToken = jwtTokenService.generateToken(user);
         RefreshToken refreshToken = refreshTokenService.generateOrUpdateRefreshToken(user);
 
         UserProfileDto userProfileDto = userMapper.userToUserProfileDto(user, jwtToken, refreshToken.getRefreshToken());
 
+        log.info(LogMessage.LOGIN_USER_SUCCESS.getMessage(userProfileDto.getId()));
         return AuthenticationResponse.createSuccessfulWithNewToken(userProfileDto);
     }
 
@@ -110,10 +123,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             @Valid @NotNull RegistrationRequest request
     ) {
         Role role = roleRepository.findByName(UserRole.OWNER.getRole())
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.ROLE_NOT_FOUND.getMessage());
+                    return new NotFoundException(ErrorMessage.ROLE_NOT_FOUND.getMessage());
+                });
 
         if(userRepository.existsByEmail(request.getEmail()))
+        {
+            log.warn(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
             throw new InvalidDataException(ErrorMessage.USER_EMAIL_ALREADY_EXISTS.getMessage(request.getEmail()));
+        }
 
         User newOwner = userMapper.registrationRequestToUser(request);
         newOwner.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -130,6 +149,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         UserProfileDto ownerProfileDto = userMapper.userToUserProfileDto(newOwner, jwtToken, refreshToken.getRefreshToken());
 
+        log.info(LogMessage.REGISTER_OWNER_SUCCESS.getMessage(ownerProfileDto.getId()));
         return AuthenticationResponse.createSuccessfulWithNewToken(ownerProfileDto);
     }
 
@@ -146,17 +166,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             );
         }
         catch (BadCredentialsException e){
+            log.warn(ErrorMessage.INVALID_USER_OR_PASSWORD.getMessage());
             throw new InvalidDataException(ErrorMessage.INVALID_USER_OR_PASSWORD.getMessage());
         }
 
         User owner = userRepository.findUserByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail())));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail()));
+                    return new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(request.getEmail()));
+                });
 
         String jwtToken = jwtTokenService.generateToken(owner);
         RefreshToken refreshToken = refreshTokenService.generateOrUpdateRefreshToken(owner);
 
         UserProfileDto ownerProfileDto = userMapper.userToUserProfileDto(owner, jwtToken, refreshToken.getRefreshToken());
 
+        log.info(LogMessage.LOGIN_OWNER_SUCCESS.getMessage(owner.getId()));
         return AuthenticationResponse.createSuccessfulWithNewToken(ownerProfileDto);
     }
 
@@ -167,12 +192,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String email = jwtTokenService.getEmail(token);
 
         if (email == null || !jwtTokenService.validateToken(token))
-            return new TokenValidationResponse(false,null, null, null);
+        {
+            log.info(LogMessage.JWT_TOKEN_NOT_VALID.getMessage());
+            return new TokenValidationResponse(false, null, null, null);
+        }
 
         User user = userRepository.findUserByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(email)));
+                .orElseThrow(() ->{
+                    log.warn(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(email));
+                    return new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_EMAIL.getMessage(email));
+                });
+
+
         List<String> roles = jwtTokenService.getRoles(token);
 
+        log.info(LogMessage.JWT_TOKEN_IS_VALID.getMessage());
         return new TokenValidationResponse(true, user.getId(), user.getEmail(), roles);
     }
 
@@ -183,6 +217,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         RefreshToken refreshToken = refreshTokenService.validateAndRefreshRefreshToken(refreshTokenValue);
 
         if (refreshToken == null || refreshToken.getUser() == null) {
+            log.warn(ErrorMessage.INVALID_REFRESH_TOKEN.getMessage());
             throw new InvalidDataException(ErrorMessage.INVALID_REFRESH_TOKEN.getMessage());
         }
 

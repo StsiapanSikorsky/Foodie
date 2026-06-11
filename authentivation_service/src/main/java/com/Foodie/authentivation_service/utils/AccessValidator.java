@@ -7,11 +7,13 @@ import com.Foodie.authentivation_service.enums.UserRole;
 import com.Foodie.authentivation_service.repository.UserRepository;
 import com.Foodie.authentivation_service.security.JwtTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class AccessValidator {
 
@@ -25,8 +27,10 @@ public class AccessValidator {
 
         if(!currentUserId.equals(ownerId)
                 && !isAdminOrSuperAdmin(currentUserId))
+        {
+            log.warn(ErrorMessage.HAVE_NO_ACCESS.getMessage());
             throw new AccessDeniedException(ErrorMessage.HAVE_NO_ACCESS.getMessage());
-
+        }
     }
 
     public Integer getUserIdFromAuthentication(){
@@ -38,7 +42,10 @@ public class AccessValidator {
             Integer userId
     ){
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_ID.getMessage(userId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.USER_NOT_FOUND_BY_ID.getMessage(userId));
+                    return new NotFoundException(ErrorMessage.USER_NOT_FOUND_BY_ID.getMessage(userId));
+                });
 
         return user.getRoles().stream()
                 .map(role -> UserRole.fromName(role.getName()))

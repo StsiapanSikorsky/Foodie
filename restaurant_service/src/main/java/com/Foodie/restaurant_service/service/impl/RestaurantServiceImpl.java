@@ -3,7 +3,6 @@ package com.Foodie.restaurant_service.service.impl;
 import com.Foodie.restaurant_service.advice.exceptions.*;
 import com.Foodie.restaurant_service.dto.RestaurantDto;
 import com.Foodie.restaurant_service.entity.Restaurant;
-import com.Foodie.restaurant_service.entity.RestaurantTable;
 import com.Foodie.restaurant_service.mapper.RestaurantMapper;
 import com.Foodie.restaurant_service.repository.RestaurantRepository;
 import com.Foodie.restaurant_service.repository.RestaurantTableRepository;
@@ -13,11 +12,10 @@ import com.Foodie.restaurant_service.request.restaurants.SearchRestaurantRequest
 import com.Foodie.restaurant_service.request.restaurants.UpdateRestaurantRequest;
 import com.Foodie.restaurant_service.responce.PaginationResponse;
 import com.Foodie.restaurant_service.responce.RestaurantResponse;
-import com.Foodie.restaurant_service.responce.RestaurantTableResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
-import com.Foodie.restaurant_service.responce.booking.RestaurantCheckResponse;
 import com.Foodie.restaurant_service.service.RestaurantService;
-import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.enums.ErrorMessage;
+import com.Foodie.restaurant_service.enums.LogMessage;
 import com.Foodie.restaurant_service.utils.Utils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -30,7 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 
 @Service
@@ -48,7 +45,10 @@ public class RestaurantServiceImpl implements RestaurantService {
             @NotNull Integer restaurantId
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         return RestaurantResponse.createSuccessful(mapper.toRestaurantDto(restaurant));
     }
@@ -62,11 +62,13 @@ public class RestaurantServiceImpl implements RestaurantService {
     ) {
         if(restaurantRepository.existsByRestaurantName(request.getRestaurantName()))
         {
+            log.warn(ErrorMessage.RESTAURANT_EXISTS_BY_NAME.getMessage(request.getRestaurantName()));
             throw new DataExistsException(ErrorMessage.RESTAURANT_EXISTS_BY_NAME.getMessage(request.getRestaurantName()));
         }
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
         if(!utils.checkRole(validationResponse)){
+            log.warn(ErrorMessage.USER_ROLE_HAS_NOT_VALID.getMessage());
             throw new IncorrectRoleException(ErrorMessage.USER_ROLE_HAS_NOT_VALID.getMessage());
         }
 
@@ -74,6 +76,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurant.setOwnerId(validationResponse.getUserId());
         restaurant = restaurantRepository.save(restaurant);
 
+        log.info(LogMessage.RESTAURANT_CREATE_SUCCESS.getMessage(validationResponse.getUserId(), restaurant.getId()));
         return RestaurantResponse.createSuccessful(mapper.toRestaurantDto(restaurant));
     }
 
@@ -86,10 +89,14 @@ public class RestaurantServiceImpl implements RestaurantService {
             @NotNull HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
         if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
@@ -98,6 +105,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurantRepository.save(updatableRestaurant);
         RestaurantDto updatedRestaurantDto = mapper.toRestaurantDto(updatableRestaurant);
 
+        log.info(LogMessage.RESTAURANT_UPDATE_SUCCESS.getMessage(validationResponse.getUserId(), updatableRestaurant.getId()));
         return RestaurantResponse.createSuccessful(updatedRestaurantDto);
     }
 
@@ -109,15 +117,20 @@ public class RestaurantServiceImpl implements RestaurantService {
             @NotNull HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
         if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
         restaurant.setDeleted(true);
         restaurantRepository.save(restaurant);
+        log.info(LogMessage.RESTAURANT_DELETE_SUCCESS.getMessage(validationResponse.getUserId(), restaurant.getId()));
     }
 
     @Override
@@ -158,6 +171,7 @@ public class RestaurantServiceImpl implements RestaurantService {
                     restaurantsAfterFiltration.getTotalPages()
                 )
         );
+
         return RestaurantResponse.createSuccessful(response);
     }
 }

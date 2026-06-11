@@ -3,6 +3,7 @@ package com.Foodie.authentivation_service.security;
 import com.Foodie.authentivation_service.entity.Role;
 import com.Foodie.authentivation_service.entity.User;
 import com.Foodie.authentivation_service.enums.AuthenticationConstants;
+import com.Foodie.authentivation_service.enums.LogMessage;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.NonNull;
@@ -57,6 +58,7 @@ public class JwtTokenService {
 
         claims.put(AuthenticationConstants.ROLES, roleList);
 
+        log.info(LogMessage.GENERATE_NEW_JWT.getMessage(user.getId()));
         return createToken(claims, user.getEmail());
     }
 

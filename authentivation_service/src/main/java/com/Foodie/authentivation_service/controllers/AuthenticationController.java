@@ -1,6 +1,8 @@
 package com.Foodie.authentivation_service.controllers;
 
 import com.Foodie.authentivation_service.dto.UserProfileDto;
+import com.Foodie.authentivation_service.enums.LogMessage;
+import com.Foodie.authentivation_service.enums.MethodsHTTP;
 import com.Foodie.authentivation_service.requests.authentication.LoginRequest;
 import com.Foodie.authentivation_service.requests.authentication.RegistrationRequest;
 import com.Foodie.authentivation_service.responce.authentication.AuthenticationRefreshResponse;
@@ -37,6 +39,8 @@ public class AuthenticationController {
             @RequestBody @Valid RegistrationRequest request,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.POST, Utils.getMethodName()));
+
         AuthenticationResponse<UserProfileDto> result = authenticationService.registerUser(request);
 
         Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getPayload().getToken());
@@ -57,6 +61,8 @@ public class AuthenticationController {
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.POST, Utils.getMethodName()));
+
         AuthenticationResponse<UserProfileDto> result = authenticationService.loginUser(request);
 
         Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getPayload().getToken());
@@ -77,6 +83,8 @@ public class AuthenticationController {
             @RequestBody @Valid RegistrationRequest request,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.POST, Utils.getMethodName()));
+
         AuthenticationResponse<UserProfileDto> result = authenticationService.registerOwner(request);
 
         Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getPayload().getToken());
@@ -97,6 +105,8 @@ public class AuthenticationController {
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.POST, Utils.getMethodName()));
+
         AuthenticationResponse<UserProfileDto> result = authenticationService.loginOwner(request);
 
         Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getPayload().getToken());
@@ -116,6 +126,8 @@ public class AuthenticationController {
     public ResponseEntity<TokenValidationResponse> validateToken(
             @RequestHeader("Authorization") String authHeader
     ) {
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
+
         String token = authHeader != null && authHeader.startsWith("Bearer ")
                 ? authHeader.substring(7)
                 : null;
@@ -140,6 +152,8 @@ public class AuthenticationController {
             HttpServletResponse response
     )
     {
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
+
         AuthenticationRefreshResponse result = authenticationService.refreshAccessToken(refreshToken);
 
         Cookie authorizationCookie = Utils.createAuthenticationCookie(result.getToken());

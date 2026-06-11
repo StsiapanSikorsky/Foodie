@@ -1,5 +1,6 @@
 package com.Foodie.booking_service.utils;
 
+import com.Foodie.booking_service.enums.ErrorMessage;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -1,4 +1,4 @@
-package com.Foodie.restaurant_service.config;
+package com.Foodie.booking_service.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -20,9 +20,9 @@ import java.util.Objects;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Restaurant Service REST API",
+                title = "Booking Service REST API",
                 version = "1.0",
-                description = "Сервис отвечающий за регистрацию и управление ресторанами"
+                description = "Сервис отвечающий за произведения бронирования"
         ),
         security = { @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
 )
@@ -40,8 +40,8 @@ public class OpenApiConfig {
     @Bean
     public GroupedOpenApi publicApi(){
         return GroupedOpenApi.builder()
-                .group("restaurant_service")
-                .packagesToScan("com.Foodie.restaurant_service")
+                .group("booking_service")
+                .packagesToScan("com.Foodie.booking_service")
                 .addOpenApiCustomizer(serverCustomizer())
                 .build();
     }

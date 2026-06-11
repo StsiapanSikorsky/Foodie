@@ -9,7 +9,8 @@ import com.Foodie.restaurant_service.responce.RestaurantResponse;
 import com.Foodie.restaurant_service.responce.authentication.AuthenticationValidationResponse;
 import com.Foodie.restaurant_service.service.RestaurantImageService;
 import com.Foodie.restaurant_service.service.S3.S3Service;
-import com.Foodie.restaurant_service.utils.ErrorMessage;
+import com.Foodie.restaurant_service.enums.ErrorMessage;
+import com.Foodie.restaurant_service.enums.LogMessage;
 import com.Foodie.restaurant_service.utils.Utils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotNull;
@@ -40,10 +41,14 @@ public class RestaurantImageServiceImpl implements RestaurantImageService {
             HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
         if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
@@ -57,6 +62,7 @@ public class RestaurantImageServiceImpl implements RestaurantImageService {
         restaurant.setImageUrls(existingUrls);
         restaurantRepository.save(restaurant);
 
+
         return RestaurantResponse.createSuccessful(uploadUrlsToS3);
     }
 
@@ -69,10 +75,14 @@ public class RestaurantImageServiceImpl implements RestaurantImageService {
             HttpServletResponse response
     ) {
         Restaurant restaurant = restaurantRepository.findByIdAndDeletedFalse(restaurantId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId)));
+                .orElseThrow(() -> {
+                    log.warn(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                    return new NotFoundException(ErrorMessage.RESTAURANT_NOT_FOUND.getMessage(restaurantId));
+                });
 
         AuthenticationValidationResponse validationResponse = utils.checkValidTokens(jwtToken, refreshToken, response);
         if (!utils.isOwnerOrAdmin(restaurant, validationResponse)) {
+            log.warn(ErrorMessage.INCORRECT_OWNER.getMessage());
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_OWNER.getMessage());
         }
 
@@ -81,9 +91,12 @@ public class RestaurantImageServiceImpl implements RestaurantImageService {
             s3Service.deleteFile(imageUrl);
             restaurantImageUrls.remove(imageUrl);
             restaurant.setImageUrls(restaurantImageUrls);
+            log.info(LogMessage.DELETE_FILE_IN_S3_SUCCESS.getMessage());
+
             restaurantRepository.save(restaurant);
         }
         else {
+            log.warn(ErrorMessage.IMAGE_URL_NOT_FOUND.getMessage(restaurantImageUrls ,restaurantId));
             throw new NotFoundException(ErrorMessage.IMAGE_URL_NOT_FOUND.getMessage(restaurantImageUrls ,restaurantId));
         }
     }
@@ -102,16 +115,19 @@ public class RestaurantImageServiceImpl implements RestaurantImageService {
                 if (fileName != null && fileName.contains(".")) {
                     extension = fileName.substring(fileName.lastIndexOf("."));
                 } else {
+                    log.warn(ErrorMessage.NOT_FOUND_EXTENCION.getMessage());
                     throw new NullExtensionException(ErrorMessage.NOT_FOUND_EXTENCION.getMessage());
                 }
 
                 String fileNameInBucket = UUID.randomUUID().toString() + extension;
                 String pathToFileInBucket = s3Service.uploadFile(file, "restaurant/" + restaurantId, fileNameInBucket);
+                log.info(LogMessage.UPLOAD_FILE_TO_S3_SUCCESS.getMessage(file));
 
                 uploadedUrls.add(pathToFileInBucket);
             }
         }
         catch(NullExtensionException e){
+            log.warn(ErrorMessage.FILE_DONT_DOWNLOAD.getMessage(e.getMessage()));
             throw new NullExtensionException(ErrorMessage.FILE_DONT_DOWNLOAD.getMessage(e.getMessage()));
         }
 

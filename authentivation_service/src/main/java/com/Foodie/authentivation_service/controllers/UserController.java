@@ -1,9 +1,12 @@
 package com.Foodie.authentivation_service.controllers;
 
 import com.Foodie.authentivation_service.dto.UserDto;
+import com.Foodie.authentivation_service.enums.LogMessage;
+import com.Foodie.authentivation_service.enums.MethodsHTTP;
 import com.Foodie.authentivation_service.requests.user.UpdateUserRequest;
 import com.Foodie.authentivation_service.responce.user.UserResponse;
 import com.Foodie.authentivation_service.services.UserService;
+import com.Foodie.authentivation_service.utils.Utils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,6 +33,8 @@ public class UserController {
     public ResponseEntity<UserResponse<UserDto>> getUserById(
             @PathVariable (name = "id") Integer id
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
+
         UserResponse<UserDto> response = userService.getUserById(id);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -45,6 +50,8 @@ public class UserController {
             @PathVariable (name = "id") Integer id,
             @RequestBody @Valid UpdateUserRequest request
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.PUT, Utils.getMethodName()));
+
         UserResponse<UserDto> response = userService.updateUser(id,request);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -59,6 +66,8 @@ public class UserController {
     public ResponseEntity<UserResponse<UserDto>> softDeleteUser(
             @PathVariable (name = "id") Integer id
     ){
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.DELETE, Utils.getMethodName()));
+
         userService.softDeleteUser(id);
 
         return ResponseEntity.status(HttpStatus.OK)

@@ -2,14 +2,17 @@ package com.Foodie.booking_service.controllers;
 
 
 import com.Foodie.booking_service.dto.BookingDto;
+import com.Foodie.booking_service.enums.MethodsHTTP;
 import com.Foodie.booking_service.request.BookingRequest;
 import com.Foodie.booking_service.request.UpdateBookingRequest;
 import com.Foodie.booking_service.response.BookingResponse;
 import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.services.BookingService;
 import com.Foodie.booking_service.utils.AuthenticationUtils;
-import com.Foodie.booking_service.utils.LogMessage;
+import com.Foodie.booking_service.enums.LogMessage;
 import com.Foodie.booking_service.utils.Utils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +23,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-
 @RestController
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("${end.point.booking}")
+@Tag(name = "Booking controller")
 public class BookingController {
 
     private final BookingService bookingService;
     private final AuthenticationUtils authenticationUtils;
 
     @PostMapping("${end.point.restaurantId}")
+    @Operation(
+            summary = "Создание бронирования"
+    )
     public ResponseEntity<BookingResponse<BookingDto>> createBooking(
             @PathVariable (name = "restaurantId") Integer restaurantId,
             @RequestBody @Valid BookingRequest bookingRequest,
@@ -39,7 +44,7 @@ public class BookingController {
             @CookieValue(name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.POST, Utils.getMethodName()));
 
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
@@ -56,10 +61,13 @@ public class BookingController {
     }
 
     @GetMapping("${end.point.bookingId}")
+    @Operation(
+            summary = "Получение бронирования по Id"
+    )
     public ResponseEntity<BookingResponse<BookingDto>> getBookingById(
             @PathVariable (name = "bookingId") Long bookingId
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
 
         BookingResponse<BookingDto> result = bookingService.getBookingById(bookingId);
 
@@ -68,6 +76,9 @@ public class BookingController {
     }
 
     @GetMapping("${end.point.owner}")
+    @Operation(
+            summary = "Получение списка бронирований определенного ресторана"
+    )
     public ResponseEntity<BookingResponse<PaginationResponse<BookingDto>>> getAllOwnerBookings(
             @RequestParam (name = "page", defaultValue = "0") int page,
             @RequestParam (name = "limit", defaultValue = "10") int limit,
@@ -75,7 +86,7 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
 
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
@@ -92,6 +103,9 @@ public class BookingController {
     }
 
     @GetMapping("${end.point.user}")
+    @Operation(
+            summary = "Получение списка бронирований пользователя"
+    )
     public ResponseEntity<BookingResponse<PaginationResponse<BookingDto>>> getAllUserBookings(
             @RequestParam (name = "page", defaultValue = "0") int page,
             @RequestParam (name = "limit", defaultValue = "10") int limit,
@@ -99,7 +113,7 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.GET, Utils.getMethodName()));
 
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
@@ -116,6 +130,9 @@ public class BookingController {
     }
 
     @PutMapping("${end.point.bookingId}")
+    @Operation(
+            summary = "Изменение бронирования"
+    )
     public ResponseEntity<BookingResponse<BookingDto>> updateBooking(
             @PathVariable (name = "bookingId") Long bookingId,
             @RequestBody @Valid UpdateBookingRequest updateBookingRequest,
@@ -123,7 +140,7 @@ public class BookingController {
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.PUT, Utils.getMethodName()));
 
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
@@ -140,13 +157,16 @@ public class BookingController {
     }
 
     @DeleteMapping("${end.point.bookingId}")
+    @Operation(
+            summary = "Перевод бронирования в статус CANCELED"
+    )
     public ResponseEntity<Void> softDeleteBooking(
             @PathVariable (name = "bookingId") Long bookingId,
             @CookieValue (name = "Authorization", required = false) String jwtToken,
             @CookieValue (name = "REFRESH_TOKEN", required = false) String refreshToken,
             HttpServletResponse response
     ){
-        log.info(LogMessage.METHOD_API_CALLED.getMessage(Utils.getMethodName()));
+        log.info(LogMessage.METHOD_API_CALLED.getMessage(MethodsHTTP.DELETE, Utils.getMethodName()));
 
         String checkedJwt = authenticationUtils.checkTokensInCookie(jwtToken, refreshToken, response);
 
