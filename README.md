@@ -19,8 +19,8 @@
 3) [Booking Service](http://localhost:8199/swagger-ui/index.html#/).
 
 ## Таблицы баз данных
-![authentication](https://github.com/StsiapanSikorsky/Foodie/images/authentication_db_tables.png)  
-![restaurants](https://github.com/StsiapanSikorsky/Foodie/images/restaurants_db_tables.png)  
-![booking](https://github.com/StsiapanSikorsky/Foodie/images/booking_db_tables.png)
+![authentication](https://github.com/StsiapanSikorsky/Foodie//blob/main/images/authentication_db_tables.png)  
+![restaurants](https://github.com/StsiapanSikorsky/Foodie/blob/main/images/restaurants_db_tables.png)  
+![booking](https://github.com/StsiapanSikorsky/Foodie/blob/main/images/booking_db_tables.png)
 
 
