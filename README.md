@@ -8,7 +8,7 @@
 4) Booking_Service - сервис отвечающий за управление бронированиями.
 
 ## Общая схема разработанной микросервисной архитектуры:
-[Schema](https://github.com/StsiapanSikorsky/Foodie/images/Foodie_architecture.png)
+[!Schema](https://github.com/StsiapanSikorsky/Foodie/images/Foodie_architecture.png)
 
 ## Инструкция по развертыванию:
 
@@ -18,8 +18,8 @@
 3) [Booking Service](http://localhost:8199/swagger-ui/index.html#/).
 
 ## Таблицы баз данных
-[authentication](https://github.com/StsiapanSikorsky/Foodie/images/authentication_db_tables.png)  
-[restaurants](https://github.com/StsiapanSikorsky/Foodie/images/restaurants_db_tables.png)  
-[booking](https://github.com/StsiapanSikorsky/Foodie/images/booking_db_tables.png)
+[!authentication](https://github.com/StsiapanSikorsky/Foodie/images/authentication_db_tables.png)  
+[!restaurants](https://github.com/StsiapanSikorsky/Foodie/images/restaurants_db_tables.png)  
+[!booking](https://github.com/StsiapanSikorsky/Foodie/images/booking_db_tables.png)
 
 
