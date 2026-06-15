@@ -6,8 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "restaurantService",
-            url = "${restaurant.service.url:http://localhost:8198}")
+@FeignClient(name = "RESTAURANT-SERVICE")
 public interface RestaurantServiceClient {
 
     @GetMapping("${end.point.booking-integration.check.restaurantId.userId.numberOfTable}")

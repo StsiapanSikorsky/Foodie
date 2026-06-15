@@ -16,6 +16,10 @@ public enum ErrorMessage {
     TIME_UNDEFINED("Time is undefined"),
     TIME_FROM_BEFORE_CURRENT_TIME("Time_from is before current time + 15 minutes"),
 
+    REDIS_ERROR("Redis error, falling back to DB: %s"),
+    REDIS_PAGINATION_ERROR("Redis error for pagination, falling back to DB: %s"),
+    REDIS_SAVE_ERROR("Failed to save in cache: %s"),
+
     UNDEFINED("Undefined"),
     ;
 

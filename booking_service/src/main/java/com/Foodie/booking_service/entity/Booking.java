@@ -6,10 +6,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.redis.core.RedisHash;
 
 import java.time.LocalDateTime;
 
 @Entity
+@RedisHash("Booking")
 @Table(name = "booking")
 @Getter
 @Setter

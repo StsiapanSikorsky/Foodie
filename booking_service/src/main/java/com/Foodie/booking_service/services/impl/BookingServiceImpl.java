@@ -8,7 +8,6 @@ import com.Foodie.booking_service.controllers.feignRestaurantService.RestaurantS
 import com.Foodie.booking_service.dto.BookingDto;
 import com.Foodie.booking_service.entity.Booking;
 import com.Foodie.booking_service.enums.BookingStatus;
-import com.Foodie.booking_service.enums.CacheKeyPrefix;
 import com.Foodie.booking_service.enums.UserRole;
 import com.Foodie.booking_service.mapper.BookingMapper;
 import com.Foodie.booking_service.repository.BookingRepository;
@@ -31,14 +30,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -50,9 +46,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final AuthenticationUtils authenticationUtils;
 
-    private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
-
+    private final CacheService cacheService;
 
     @Override
     @Transactional
@@ -115,11 +109,10 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse<BookingDto> getBookingById(
             @NotNull Long bookingId
     ) {
-        String cachedValue = redisTemplate.opsForValue().get(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
-        if (cachedValue != null) {
-            BookingDto bookingDto = objectMapper.readValue(cachedValue, BookingDto.class);
+        Optional<BookingDto> resultFromCache = cacheService.findById(bookingId);
+        if (resultFromCache.isPresent()){
             log.info(LogMessage.RESULT_RETURN_FROM_CACHE.getMessage() + Utils.getMethodName());
-            return BookingResponse.createSuccessful(bookingDto);
+            return BookingResponse.createSuccessful(resultFromCache.get());
         }
 
         Booking booking = bookingRepository.findById(bookingId)
@@ -128,12 +121,7 @@ public class BookingServiceImpl implements BookingService {
                     return new NotFoundException(ErrorMessage.BOOKING_NOT_FOUND_BY_ID.getMessage(bookingId));
                 });
 
-        redisTemplate.opsForValue().set(
-                CacheKeyPrefix.BOOKING.getPrefix() + bookingId,
-                objectMapper.writeValueAsString(bookingMapper.toBookingDto(booking)),
-                5,
-                TimeUnit.MINUTES
-        );
+        cacheService.saveBookingDto(bookingId, booking);
 
         log.info(LogMessage.RESULT_RETURN_FROM_DB.getMessage() + Utils.getMethodName());
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(booking));
@@ -158,15 +146,13 @@ public class BookingServiceImpl implements BookingService {
             throw new IncorrectRoleException(ErrorMessage.INCORRECT_ROLE.getMessage(validationResponse.getRoles()));
         }
 
-        String cachedKey = buildBookingUserCacheKey(validationResponse.getUserId(), pageable);
-        String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
-        if(cachedPaginationBookingDto != null){
-            PaginationResponse<BookingDto> resultFromCache = objectMapper.readValue(
-                    cachedPaginationBookingDto,
-                    new TypeReference<PaginationResponse<BookingDto>>() {}
-            );
+        Optional<PaginationResponse<BookingDto>> resultFromCache = cacheService.findUserPaginationBookings(
+                validationResponse.getUserId(),
+                pageable
+        );
+        if (resultFromCache.isPresent()){
             log.info(LogMessage.RESULT_RETURN_FROM_CACHE.getMessage() + Utils.getMethodName());
-            return BookingResponse.createSuccessful(resultFromCache);
+            return BookingResponse.createSuccessful(resultFromCache.get());
         }
 
         Page<BookingDto> bookings = bookingRepository.findAllByUserId(validationResponse.getUserId(), pageable)
@@ -181,12 +167,9 @@ public class BookingServiceImpl implements BookingService {
                 )
         );
 
-        String cacheResult = objectMapper.writeValueAsString(result);
-        redisTemplate.opsForValue().set(
-                cachedKey,
-                cacheResult,
-                5,
-                TimeUnit.MINUTES
+        cacheService.savePaginationBookingDto(
+                CacheService.buildBookingUserCacheKey(validationResponse.getUserId(), pageable),
+                result
         );
 
         log.info(LogMessage.RESULT_RETURN_FROM_DB.getMessage() + Utils.getMethodName());
@@ -215,17 +198,15 @@ public class BookingServiceImpl implements BookingService {
 
         Integer restaurantId = restaurantServiceClient.getRestaurantIdWhenUserIsOwner(validationResponse.getUserId());
 
-        String cachedKey = buildBookingOwnerCacheKey(validationResponse.getUserId(), restaurantId, pageable);
-        String cachedPaginationBookingDto = redisTemplate.opsForValue().get(cachedKey);
-        if(cachedPaginationBookingDto != null){
-            PaginationResponse<BookingDto> resultFromCache = objectMapper.readValue(
-                    cachedPaginationBookingDto,
-                    new TypeReference<PaginationResponse<BookingDto>>() {}
-            );
+        Optional<PaginationResponse<BookingDto>> resultFromCache = cacheService.findOwnerPaginationBookings(
+                validationResponse.getUserId(),
+                restaurantId,
+                pageable
+        );
+        if(resultFromCache.isPresent()){
             log.info(LogMessage.RESULT_RETURN_FROM_CACHE.getMessage() + Utils.getMethodName());
-            return BookingResponse.createSuccessful(resultFromCache);
+            return BookingResponse.createSuccessful(resultFromCache.get());
         }
-
 
         Page<BookingDto> bookings = bookingRepository.findAllByRestaurantId(restaurantId, pageable)
                 .map(bookingMapper::toBookingDto);
@@ -239,12 +220,9 @@ public class BookingServiceImpl implements BookingService {
                 )
         );
 
-        String cacheResult = objectMapper.writeValueAsString(result);
-        redisTemplate.opsForValue().set(
-                cachedKey,
-                cacheResult,
-                5,
-                TimeUnit.MINUTES
+        cacheService.savePaginationBookingDto(
+                CacheService.buildBookingOwnerCacheKey(validationResponse.getUserId(), restaurantId, pageable),
+                result
         );
 
         log.info(LogMessage.RESULT_RETURN_FROM_DB.getMessage() + Utils.getMethodName());
@@ -279,7 +257,7 @@ public class BookingServiceImpl implements BookingService {
 
         if (booking.getStatus() == BookingStatus.CANCELED) {
             log.warn(ErrorMessage.BOOKING_WAS_CANCELLED_BY_ID.getMessage(bookingId));
-            throw new BookingConflictException(ErrorMessage.BOOKING_WAS_CANCELLED_BY_ID.getMessage(booking.getId()));
+            throw new BookingConflictException(ErrorMessage.BOOKING_WAS_CANCELLED_BY_ID.getMessage(bookingId));
         }
 
         try {
@@ -321,8 +299,7 @@ public class BookingServiceImpl implements BookingService {
         Booking updatedBooking = bookingMapper.updatedBookingRequestToBooking(booking, updateBookingRequest);
         updatedBooking.setUpdatedAt(LocalDateTime.now());
         bookingRepository.save(updatedBooking);
-
-        redisTemplate.delete(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
+        cacheService.deleteBooking(bookingId);
 
         log.info(LogMessage.UPDATE_BOOKING_SUCCESS.getMessage(validationResponse.getUserId(), booking.getId()) + Utils.getMethodName());
         return BookingResponse.createSuccessful(bookingMapper.toBookingDto(updatedBooking));
@@ -355,9 +332,8 @@ public class BookingServiceImpl implements BookingService {
             booking.setStatus(BookingStatus.CANCELED);
             booking.setUpdatedAt(LocalDateTime.now());
             bookingRepository.save(booking);
+            cacheService.deleteBooking(bookingId);
             log.info(LogMessage.BOOKING_STATUS_IS_CANCELLED.getMessage(BookingStatus.CANCELED));
-
-            redisTemplate.delete(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
         }
         else {
             log.warn(ErrorMessage.DONT_HAVE_PERMISSION.getMessage());
@@ -392,29 +368,5 @@ public class BookingServiceImpl implements BookingService {
             log.warn(ErrorMessage.TIME_FROM_BEFORE_CURRENT_TIME.getMessage() + Utils.getMethodName());
             throw new IncorrectDataException(ErrorMessage.TIME_FROM_BEFORE_CURRENT_TIME.getMessage());
         }
-    }
-
-    private String buildBookingUserCacheKey(
-            Integer userId,
-            Pageable pageable
-    ){
-        return String.format(CacheKeyPrefix.BOOKING_WITH_PAGINATION.getPrefix(),
-                userId,
-                pageable.getPageNumber(),
-                pageable.getPageSize()
-        );
-    }
-
-    private String buildBookingOwnerCacheKey(
-            Integer userId,
-            Integer restaurantId,
-            Pageable pageable
-    ){
-        return String.format(CacheKeyPrefix.BOOKING_WITH_PAGINATION.getPrefix(),
-                userId,
-                restaurantId,
-                pageable.getPageNumber(),
-                pageable.getPageSize()
-        );
     }
 }

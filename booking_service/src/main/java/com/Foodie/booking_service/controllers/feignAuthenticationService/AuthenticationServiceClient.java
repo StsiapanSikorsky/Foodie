@@ -6,16 +6,15 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "authenticationService",
-            url = "${auth.service.url:http//localhost:8197}")
+@FeignClient(name = "AUTHENTICATION-SERVICE")
 public interface AuthenticationServiceClient {
 
-    @GetMapping("/authentication/validate")
+    @GetMapping("${end.point.authentication.validate}")
     AuthenticationValidationResponse validateToken(
             @RequestHeader("Authorization") String token
     );
 
-    @GetMapping("/authentication/refresh")
+    @GetMapping("${end.point.authentication.refresh}")
     AuthenticationRefreshResponse refreshToken(
             @RequestHeader("REFRESH_TOKEN") String refreshToken
     );
