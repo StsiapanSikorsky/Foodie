@@ -1,0 +1,172 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: foodie-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - foodie-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: foodie-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - foodie-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  discovery-service:
+    build:
+      context: ../discovery_service
+      dockerfile: docker/Dockerfile
+    container_name: discovery-service
+    ports:
+      - "8201:8201"
+    networks:
+      - foodie-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8201/actuator/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: foodie-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - foodie-network
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: foodie-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - foodie-network
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+
+  authentication-service:
+    build:
+      context: ../authentivation_service
+      dockerfile: docker/Dockerfile
+    container_name: authentication-service
+    ports:
+      - "8197:8197"
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - foodie-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ../api_gateway
+      dockerfile: docker/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8200:8200"
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - foodie-network
+    restart: unless-stopped
+
+  booking-service:
+    build:
+      context: ../booking_service
+      dockerfile: docker/Dockerfile
+    container_name: booking-service
+    ports:
+      - "8199:8199"
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - foodie-network
+    restart: unless-stopped
+
+  restaurant-service:
+    build:
+      context: ../restaurant_service
+      dockerfile: docker/Dockerfile
+    container_name: restaurant-service
+    ports:
+      - "8198:8198"
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - foodie-network
+    restart: unless-stopped
+
+networks:
+  foodie-network:
+    driver: bridge
+    enable_ipv6: false
+
+volumes:
+  grafana-storage:
+  postgres-data:
+  redis-data:
