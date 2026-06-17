@@ -16,6 +16,7 @@ import com.Foodie.booking_service.response.PaginationResponse;
 import com.Foodie.booking_service.response.authentication.AuthenticationValidationResponse;
 import com.Foodie.booking_service.response.restaurant.RestaurantCheckResponse;
 import com.Foodie.booking_service.services.impl.BookingServiceImpl;
+import com.Foodie.booking_service.services.impl.CacheService;
 import com.Foodie.booking_service.utils.AuthenticationUtils;
 import feign.FeignException;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,20 +27,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,6 +65,9 @@ public class BookingServiceTests {
 
     @Mock
     private ObjectMapper objectMapper;
+
+    @Mock
+    private CacheService cacheService;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -241,60 +241,46 @@ public class BookingServiceTests {
 
     @Test
     void getBookingById_SuccessFromDB(){
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("booking:1")).thenReturn(null);
+        when(cacheService.findById(1L)).thenReturn(Optional.empty());
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(testBooking));
         when(bookingMapper.toBookingDto(testBooking)).thenReturn(testbookingDto);
-        when(objectMapper.writeValueAsString(testbookingDto)).thenReturn("{}");
 
         BookingResponse<BookingDto> result = bookingService.getBookingById(1L);
 
         assertNotNull(result);
         assertEquals(result.getPayload().getId(), testbookingDto.getId());
 
-        verify(redisTemplate, times(2)).opsForValue();
-        verify(valueOperations,times(1)).get("booking:1");
+        verify(cacheService, times(1)).findById(1L);
         verify(bookingRepository, times(1)).findById(1L);
-        verify(bookingMapper, times(2)).toBookingDto(testBooking);
-        verify(valueOperations, times(1)).set(eq("booking:1"), anyString(), eq(5L), eq(TimeUnit.MINUTES));
+        verify(cacheService, times(1)).saveBookingDto(1L, testBooking);
+        verify(bookingMapper, times(1)).toBookingDto(testBooking);
     }
 
     @Test
     void getBookingById_SuccessFromCache(){
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("booking:1")).thenReturn("{}");
-        when(objectMapper.readValue("{}", BookingDto.class)).thenReturn(testbookingDto);
+        when(cacheService.findById(1L)).thenReturn(Optional.of(testbookingDto));
 
         BookingResponse<BookingDto> result = bookingService.getBookingById(1L);
 
         assertNotNull(result);
         assertEquals(result.getPayload().getId(), testbookingDto.getId());
 
-        verify(redisTemplate, times(1)).opsForValue();
-        verify(valueOperations,times(1)).get("booking:1");
-        verify(objectMapper, times(1)).readValue(anyString(), eq(BookingDto.class));
-        verify(bookingRepository, times(0)).findById(1L);
-        verify(bookingMapper, times(0)).toBookingDto(testBooking);
-        verify(valueOperations, times(0)).set(eq("booking:1"), anyString(), eq(5L), eq(TimeUnit.MINUTES));
+        verify(cacheService, times(1)).findById(1L);
+        verify(bookingRepository, never()).findById(1L);
+        verify(cacheService, never()).saveBookingDto(1L, testBooking);
+        verify(bookingMapper, never()).toBookingDto(testBooking);
     }
 
     @Test
     void getUserBookings_SuccessFromDB() {
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-        List<Booking> userBookings = List.of(testBooking, testBooking2);
-        Page<Booking> userBookingsPage = new PageImpl<>(userBookings, pageable, userBookings.size());
+        List<Booking> bookingList = List.of(testBooking, testBooking2);
+        Page<Booking> bookingPage = new PageImpl<>(bookingList, pageable, bookingList.size());
 
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseUser);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn(null);
-        when(bookingRepository.findAllByUserId(testValidationResponseUser.getUserId(), pageable)).thenReturn(userBookingsPage);
+        when(cacheService.findUserPaginationBookings(testValidationResponseUser.getUserId(), pageable)).thenReturn(Optional.empty());
+        when(bookingRepository.findAllByUserId(testValidationResponseUser.getUserId(), pageable)).thenReturn(bookingPage);
         when(bookingMapper.toBookingDto(testBooking)).thenReturn(testbookingDto);
         when(bookingMapper.toBookingDto(testBooking2)).thenReturn(testbookingDto2);
-        when(objectMapper.writeValueAsString(any(PaginationResponse.class))).thenReturn("{}");
 
         BookingResponse<PaginationResponse<BookingDto>> result = bookingService.getUserBookings(pageable, jwtToken, refreshToken, response);
 
@@ -303,22 +289,19 @@ public class BookingServiceTests {
         assertEquals(2, result.getPayload().getContent().size());
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(valueOperations, atLeastOnce()).get(anyString());
+        verify(cacheService, times(1)).findUserPaginationBookings(testValidationResponseUser.getUserId(), pageable);
         verify(bookingRepository, times(1)).findAllByUserId(testValidationResponseUser.getUserId(), pageable);
+        verify(cacheService, times(1)).savePaginationBookingDto(anyString(), any(PaginationResponse.class));
         verify(bookingMapper, times(2)).toBookingDto(any(Booking.class));
-        verify(valueOperations, times(1)).set(anyString(), anyString(), eq(5L), eq(TimeUnit.MINUTES));
     }
 
     @Test
-    void getUserBookings_SuccessFromCache() throws Exception {
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
+    void getUserBookings_SuccessFromCache(){
         PaginationResponse<BookingDto> cachedResponse = new PaginationResponse<>();
-        cachedResponse.setContent(List.of(testbookingDto));
+        cachedResponse.setContent(List.of(testbookingDto, testbookingDto2));
 
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseUser);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn("{}");
-        when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(cachedResponse);
+        when(cacheService.findUserPaginationBookings(testValidationResponseUser.getUserId(), pageable)).thenReturn(Optional.of(cachedResponse));
 
         BookingResponse<PaginationResponse<BookingDto>> result = bookingService.getUserBookings(pageable, jwtToken, refreshToken, response);
 
@@ -326,45 +309,38 @@ public class BookingServiceTests {
         assertNotNull(result.getPayload());
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(valueOperations, times(1)).get(anyString());
-        verify(objectMapper, times(1)).readValue(anyString(), any(TypeReference.class));
-        verify(bookingRepository, never()).findAllByUserId(anyInt(), any());
-        verify(bookingMapper, never()).toBookingDto(any());
-        verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any());
+        verify(cacheService, times(1)).findUserPaginationBookings(testValidationResponseUser.getUserId(), pageable);
+        verify(bookingRepository, never()).findAllByUserId(testValidationResponseUser.getUserId(), pageable);
+        verify(cacheService, never()).savePaginationBookingDto(anyString(), any(PaginationResponse.class));
+        verify(bookingMapper, never()).toBookingDto(any(Booking.class));
     }
 
     @Test
     void getUserBookings_IncorrectRole_ThrowIncorrectRoleException(){
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);
 
         assertThatThrownBy(() -> bookingService.getUserBookings(pageable, jwtToken, refreshToken, response))
                 .isInstanceOf(IncorrectRoleException.class)
-                .hasMessageContaining("role forbidden");
+                .hasMessageContaining("forbidden");
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(redisTemplate, never()).opsForValue();
-        verify(bookingRepository, never()).findAllByUserId(anyInt(), any());  // ← добавить
-        verify(bookingMapper, never()).toBookingDto(any());
-        verify(valueOperations, never()).get(anyString());
-        verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any());
+        verify(cacheService, never()).findUserPaginationBookings(testValidationResponseUser.getUserId(), pageable);
+        verify(bookingRepository, never()).findAllByUserId(testValidationResponseUser.getUserId(), pageable);
+        verify(cacheService, never()).savePaginationBookingDto(anyString(), any(PaginationResponse.class));
+        verify(bookingMapper, never()).toBookingDto(any(Booking.class));
     }
 
     @Test
     void getOwnerBookings_SuccessFromDB(){
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-        List<Booking> restaurantBookings = List.of(testBooking, testBooking2);
-        Page<Booking> restaurantBookingsPage = new PageImpl<>(restaurantBookings, pageable, restaurantBookings.size());
+        List<Booking> bookingList = List.of(testBooking, testBooking2);
+        Page<Booking> bookingPage = new PageImpl<>(bookingList, pageable, bookingList.size());
 
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);  // OWNER role
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn(null);
         when(restaurantServiceClient.getRestaurantIdWhenUserIsOwner(testValidationResponseOwner.getUserId())).thenReturn(1);
-        when(bookingRepository.findAllByRestaurantId(1, pageable)).thenReturn(restaurantBookingsPage);
+        when(cacheService.findOwnerPaginationBookings(testValidationResponseOwner.getUserId(), 1, pageable)).thenReturn(Optional.empty());
+        when(bookingRepository.findAllByRestaurantId(1, pageable)).thenReturn(bookingPage);
         when(bookingMapper.toBookingDto(testBooking)).thenReturn(testbookingDto);
         when(bookingMapper.toBookingDto(testBooking2)).thenReturn(testbookingDto2);
-        when(objectMapper.writeValueAsString(any(PaginationResponse.class))).thenReturn("{}");
 
         BookingResponse<PaginationResponse<BookingDto>> result = bookingService.getOwnerBookings(
                 pageable, jwtToken, refreshToken, response
@@ -377,25 +353,20 @@ public class BookingServiceTests {
         assertEquals(testbookingDto2.getId(), result.getPayload().getContent().get(1).getId());
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(redisTemplate, times(2)).opsForValue();
-        verify(valueOperations, times(1)).get(anyString());
         verify(restaurantServiceClient, times(1)).getRestaurantIdWhenUserIsOwner(testValidationResponseOwner.getUserId());
+        verify(cacheService, times(1)).findOwnerPaginationBookings(testValidationResponseOwner.getUserId(), 1, pageable);
         verify(bookingRepository, times(1)).findAllByRestaurantId(1, pageable);
         verify(bookingMapper, times(2)).toBookingDto(any(Booking.class));
-        verify(objectMapper, times(1)).writeValueAsString(any(PaginationResponse.class));
-        verify(valueOperations, times(1)).set(anyString(), anyString(), eq(5L), eq(TimeUnit.MINUTES));
     }
 
     @Test
     void getOwnerBookings_SuccessFromCache(){
-        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
         PaginationResponse<BookingDto> cachedResponse = new PaginationResponse<>();
-        cachedResponse.setContent(List.of(testbookingDto));
+        cachedResponse.setContent(List.of(testbookingDto, testbookingDto2));
 
         when(authenticationUtils.checkValidTokens(jwtToken, refreshToken, response)).thenReturn(testValidationResponseOwner);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn("{}");
-        when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(cachedResponse);
+        when(restaurantServiceClient.getRestaurantIdWhenUserIsOwner(testValidationResponseOwner.getUserId())).thenReturn(1);
+        when(cacheService.findOwnerPaginationBookings(testValidationResponseOwner.getUserId(), 1, pageable)).thenReturn(Optional.of(cachedResponse));
 
         BookingResponse<PaginationResponse<BookingDto>> result = bookingService.getOwnerBookings(pageable, jwtToken, refreshToken, response);
 
@@ -403,12 +374,10 @@ public class BookingServiceTests {
         assertNotNull(result.getPayload());
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(valueOperations, times(1)).get(anyString());
-        verify(restaurantServiceClient, times(1)).getRestaurantIdWhenUserIsOwner(anyInt());
-        verify(objectMapper, times(1)).readValue(anyString(), any(TypeReference.class));
-        verify(bookingRepository, never()).findAllByRestaurantId(anyInt(), any());
-        verify(bookingMapper, never()).toBookingDto(any());
-        verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any());
+        verify(restaurantServiceClient, times(1)).getRestaurantIdWhenUserIsOwner(testValidationResponseOwner.getUserId());
+        verify(cacheService, times(1)).findOwnerPaginationBookings(testValidationResponseOwner.getUserId(), 1, pageable);
+        verify(bookingRepository, never()).findAllByRestaurantId(1, pageable);
+        verify(bookingMapper, never()).toBookingDto(any(Booking.class));
     }
 
     @Test
@@ -417,14 +386,13 @@ public class BookingServiceTests {
 
         assertThatThrownBy(() -> bookingService.getOwnerBookings(pageable, jwtToken, refreshToken, response))
                 .isInstanceOf(IncorrectRoleException.class)
-                .hasMessageContaining("role forbidden");
+                .hasMessageContaining("forbidden");
 
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
-        verify(redisTemplate, never()).opsForValue();
-        verify(restaurantServiceClient, never()).getRestaurantIdWhenUserIsOwner(anyInt());
-        verify(bookingRepository, never()).findAllByRestaurantId(anyInt(), any());
-        verify(bookingMapper, never()).toBookingDto(any());
-        verify(objectMapper, never()).writeValueAsString(any());
+        verify(restaurantServiceClient, never()).getRestaurantIdWhenUserIsOwner(testValidationResponseOwner.getUserId());
+        verify(cacheService, never()).findOwnerPaginationBookings(testValidationResponseOwner.getUserId(), 1, pageable);
+        verify(bookingRepository, never()).findAllByRestaurantId(1, pageable);
+        verify(bookingMapper, never()).toBookingDto(any(Booking.class));
     }
 
     @Test
@@ -450,7 +418,7 @@ public class BookingServiceTests {
         verify(bookingRepository, times(1)).existsConflictingBookingExcludingId(testBooking.getRestaurantId(),testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(),testUpdateBookingRequest.getBookingTo(), 1L);
         verify(bookingMapper, times(1)).updatedBookingRequestToBooking(testBooking, testUpdateBookingRequest);
         verify(bookingRepository, times(1)).save(testBooking);
-        verify(redisTemplate, times(1)).delete("booking:" + 1L);
+        verify(cacheService, times(1)).deleteBooking(1L);
         verify(bookingMapper, times(1)).toBookingDto(testBooking);
     }
 
@@ -471,7 +439,7 @@ public class BookingServiceTests {
         verify(bookingRepository, times(1)).existsConflictingBookingExcludingId(testBooking.getRestaurantId(), testUpdateBookingRequest.getTableNumber(), testUpdateBookingRequest.getBookingFrom(), testUpdateBookingRequest.getBookingTo(), 1L);
         verify(bookingMapper, never()).updatedBookingRequestToBooking(any(), any());
         verify(bookingRepository, never()).save(any());
-        verify(redisTemplate, never()).delete(anyString());
+        verify(cacheService, never()).deleteBooking(1L);
         verify(bookingMapper, never()).toBookingDto(any());
     }
 
@@ -489,8 +457,8 @@ public class BookingServiceTests {
         verify(authenticationUtils, times(1)).checkValidTokens(jwtToken, refreshToken, response);
         verify(bookingRepository, times(1)).findById(1L);
         verify(restaurantServiceClient, times(1)).checkRestaurantOwner(testBooking.getRestaurantId(), testValidationResponseOwner.getUserId());
+        verify(cacheService, times(1)).deleteBooking(1L);
         verify(bookingRepository, times(1)).save(testBooking);
-        verify(redisTemplate, times(1)).delete("booking:" + 1L);
     }
 
     @Test
@@ -512,6 +480,6 @@ public class BookingServiceTests {
         verify(bookingRepository, times(1)).findById(1L);
         verify(restaurantServiceClient, times(1)).checkRestaurantOwner(testBooking.getRestaurantId(), noPermissionResponse.getUserId());
         verify(bookingRepository, never()).save(any());
-        verify(redisTemplate, never()).delete(anyString());
+        verify(cacheService, never()).deleteBooking(1L);
     }
 }

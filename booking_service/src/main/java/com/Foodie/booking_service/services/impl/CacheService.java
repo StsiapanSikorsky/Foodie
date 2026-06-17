@@ -25,7 +25,7 @@ public class CacheService {
 
     private final BookingMapper bookingMapper;
 
-    protected Optional<BookingDto> findById(
+    public Optional<BookingDto> findById(
             Long bookingId
     ){
         try {
@@ -39,7 +39,7 @@ public class CacheService {
         return Optional.empty();
     }
 
-    protected Optional<PaginationResponse<BookingDto>> findUserPaginationBookings(
+    public Optional<PaginationResponse<BookingDto>> findUserPaginationBookings(
             Integer userId,
             Pageable pageable
     ){
@@ -55,7 +55,7 @@ public class CacheService {
         return Optional.empty();
     }
 
-    protected Optional<PaginationResponse<BookingDto>> findOwnerPaginationBookings(
+    public Optional<PaginationResponse<BookingDto>> findOwnerPaginationBookings(
             Integer ownerId,
             Integer restaurantId,
             Pageable pageable
@@ -72,7 +72,7 @@ public class CacheService {
         return Optional.empty();
     }
 
-    protected void saveBookingDto(
+    public void saveBookingDto(
             Long bookingId,
             Booking booking
     ){
@@ -89,7 +89,7 @@ public class CacheService {
         }
     }
 
-    protected void savePaginationBookingDto(
+    public void savePaginationBookingDto(
             String cachedKey,
             PaginationResponse<BookingDto> paginationBookingDto
     ){
@@ -106,7 +106,7 @@ public class CacheService {
         }
     }
 
-    protected void deleteBooking(
+    public void deleteBooking(
             Long bookingId
     ){
         redisTemplate.delete(CacheKeyPrefix.BOOKING.getPrefix() + bookingId);
