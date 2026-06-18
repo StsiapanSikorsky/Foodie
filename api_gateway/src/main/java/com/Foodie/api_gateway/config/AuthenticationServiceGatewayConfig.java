@@ -17,7 +17,7 @@ public class AuthenticationServiceGatewayConfig {
                                 "/owner/**",
                                 "/user/**"
                         )
-                        .uri("http://localhost:8197"))
+                        .uri("lb://AUTHENTICATION-SERVICE"))
                 .build();
     }
 

@@ -15,7 +15,7 @@ public class BookingServiceGatewayConfig {
                         .path(
                                 "/booking/**"
                         )
-                        .uri("http://localhost:8199"))
+                        .uri("lb://BOOKING-SERVICE"))
                 .build();
     }
 }

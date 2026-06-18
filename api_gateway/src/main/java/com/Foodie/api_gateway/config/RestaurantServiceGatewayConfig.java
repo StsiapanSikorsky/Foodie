@@ -15,7 +15,7 @@ public class RestaurantServiceGatewayConfig {
                         .path(
                                 "/restaurant/**"
                         )
-                        .uri("http://localhost:8198"))
+                        .uri("lb://RESTAURANT-SERVICE"))
                 .build();
     }
 }

@@ -1,4 +1,12 @@
-FROM ubuntu:latest
-LABEL authors="STEPA"
+FROM eclipse-temurin:21-jre
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /srv
+
+COPY target/*.jar .
+COPY docker/authentication-service.sh .
+
+RUN chmod +x authentication-service.sh
+
+EXPOSE 8197
+
+ENTRYPOINT ["./authentication-service.sh"]

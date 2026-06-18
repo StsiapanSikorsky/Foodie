@@ -1,4 +1,12 @@
-FROM ubuntu:latest
-LABEL authors="STEPA"
+FROM eclipse-temurin:21-jre
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /srv
+
+COPY target/*.jar .
+COPY docker/booking-service.sh .
+
+RUN chmod +x booking-service.sh
+
+EXPOSE 8199
+
+ENTRYPOINT ["./booking-service.sh"]

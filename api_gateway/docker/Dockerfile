@@ -1,4 +1,12 @@
-FROM ubuntu:latest
-LABEL authors="STEPA"
+FROM eclipse-temurin:21-jre
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /srv
+
+COPY target/*.jar .
+COPY docker/api-gateway.sh .
+
+RUN chmod +x api-gateway.sh
+
+EXPOSE 8200
+
+ENTRYPOINT ["./api-gateway.sh"]
