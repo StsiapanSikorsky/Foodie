@@ -5,12 +5,18 @@ services:
     container_name: foodie-postgres
     ports:
       - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - foodie-network
     restart: unless-stopped
@@ -25,6 +31,11 @@ services:
     container_name: foodie-redis
     ports:
       - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
     volumes:
       - redis-data:/data
     networks:
@@ -36,6 +47,33 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: foodie-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
+    environment:
+      MINIO_ROOT_USER: foodie_admin
+      MINIO_ROOT_PASSWORD: foodie_admin
+      MINIO_DEFAULT_BUCKETS: foodie-images
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - foodie-network
+    healthcheck:
+      test: ["CMD", "minio", "server", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
   discovery-service:
     build:
       context: ../discovery_service
@@ -43,6 +81,14 @@ services:
     container_name: discovery-service
     ports:
       - "8201:8201"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     networks:
       - foodie-network
     restart: unless-stopped
@@ -57,6 +103,11 @@ services:
     container_name: foodie-prometheus
     ports:
       - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
@@ -74,6 +125,11 @@ services:
     container_name: foodie-grafana
     ports:
       - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -93,8 +149,17 @@ services:
     container_name: authentication-service
     ports:
       - "8197:8197"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     environment:
       - DB_HOST=postgres
+      - EUREKA_HOST=discovery-service
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,11 +176,17 @@ services:
     container_name: api-gateway
     ports:
       - "8200:8200"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
+        reservations:
+          cpus: '0.15'
+          memory: 64M
     environment:
-      - DB_HOST=postgres
+      - EUREKA_HOST=discovery-service
     depends_on:
-      postgres:
-        condition: service_healthy
       discovery-service:
         condition: service_healthy
     networks:
@@ -129,9 +200,19 @@ services:
     container_name: booking-service
     ports:
       - "8199:8199"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     environment:
       - DB_HOST=postgres
+      - EUREKA_HOST=discovery-service
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       postgres:
         condition: service_healthy
@@ -150,13 +231,24 @@ services:
     container_name: restaurant-service
     ports:
       - "8198:8198"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     environment:
       - DB_HOST=postgres
+      - EUREKA_HOST=discovery-service
     depends_on:
       postgres:
         condition: service_healthy
       discovery-service:
         condition: service_healthy
+      minio:
+        condition: service_started
     networks:
       - foodie-network
     restart: unless-stopped
@@ -170,3 +262,4 @@ volumes:
   grafana-storage:
   postgres-data:
   redis-data:
+  minio-data:
